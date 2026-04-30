@@ -180,9 +180,14 @@ export default function TemplateDetailPage() {
 
             {/* Action buttons */}
             <div className="space-y-2">
-              <Button className="w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white gap-2">
+              <Button asChild className="w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white gap-2">
+                <Link href={`/editor/${template.id}`}>
+                  Customize Document &amp; Pay
+                </Link>
+              </Button>
+              <Button className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-[#1a1a1a] gap-2">
                 <Download className="h-4 w-4" />
-                Pay ${template.price.toFixed(2)} &amp; download
+                Download static ${template.price.toFixed(2)}
               </Button>
               <Button variant="outline" className="w-full border-gray-300 hover:border-gray-500 text-gray-700 text-sm">
                 Add to kit — save with bundle
