@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+"use client";
+
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Block, sampleBrand } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import { Lock } from "lucide-react";
@@ -15,9 +17,261 @@ interface EditorCanvasProps {
   handleDragOver: (e: React.DragEvent, index: number) => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   dropIndicator: number | null;
+  zoom: number;
 }
 
+// A4 at 96 dpi
 const A4_HEIGHT = 1123;
+const A4_WIDTH = 794;
+const PAGE_GAP = 24; // px gap between page cards
+const CONTENT_PADDING_H = 56; // px, each side (px-14 = 56px)
+// Approximate fixed heights – these get updated once from refs
+const APPROX_HEADER_H = 116;
+const APPROX_FOOTER_H = 98;
+const CONTENT_MARGIN_TOP = 32;  // mb-8 below header
+const CONTENT_MARGIN_BTM = 48;  // mt-12 above footer
+const USABLE_H =
+  A4_HEIGHT - APPROX_HEADER_H - APPROX_FOOTER_H - CONTENT_MARGIN_TOP - CONTENT_MARGIN_BTM;
+
+/** Distribute blocks across pages given per-block heights */
+function distributeToPages(
+  blocks: Block[],
+  heights: Map<string, number>,
+  usableH: number,
+): Block[][] {
+  if (blocks.length === 0) return [[]];
+  const pages: Block[][] = [[]];
+  let used = 0;
+
+  for (const block of blocks) {
+    const bh = heights.get(block.id) ?? 60;
+    if (used + bh > usableH && pages[pages.length - 1].length > 0) {
+      pages.push([]);
+      used = 0;
+    }
+    pages[pages.length - 1].push(block);
+    used += bh;
+  }
+  return pages;
+}
+
+function LockedHeader() {
+  return (
+    <div className="pointer-events-none select-none relative group">
+      <div
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-white/30 transition-opacity"
+        title="Locked brand header"
+      >
+        <Lock size={12} />
+      </div>
+      <div
+        style={{
+          backgroundColor: sampleBrand.primaryColor,
+          padding: "18px 36px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              backgroundColor: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 900,
+              fontSize: 14,
+              color: sampleBrand.primaryColor,
+              flexShrink: 0,
+            }}
+          >
+            {sampleBrand.initials}
+          </div>
+          <div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 17, lineHeight: 1.2 }}>
+              {sampleBrand.companyName}
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 2 }}>
+              {sampleBrand.tagline}
+            </div>
+          </div>
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textAlign: "right", lineHeight: 1.7 }}>
+          {sampleBrand.email}<br />
+          {sampleBrand.phone}<br />
+          {sampleBrand.website}<br />
+          {sampleBrand.address}
+        </div>
+      </div>
+      <div style={{ height: 3, backgroundColor: sampleBrand.secondaryColor }} />
+    </div>
+  );
+}
+
+function LockedFooter() {
+  return (
+    <div className="pointer-events-none select-none relative group">
+      <div className="absolute -top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-300 transition-opacity">
+        <Lock size={12} />
+      </div>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          padding: "13px 36px 0",
+          borderTop: "1px solid #eeeeee",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ fontSize: 11, color: "#aaaaaa" }}>{sampleBrand.website}</span>
+        <div style={{ flex: 1, height: 1, backgroundColor: "#ebebeb", margin: "0 16px" }} />
+        <span style={{ fontSize: 11, color: "#aaaaaa" }}>{sampleBrand.companyName}</span>
+      </div>
+      <div style={{ height: 4, backgroundColor: sampleBrand.primaryColor, marginTop: 13 }} />
+    </div>
+  );
+}
+
+/** A single A4 page card */
+function PageCard({
+  pageIndex,
+  pageBlocks,
+  globalStartIndex,
+  totalBlocks,
+  selectedBlockId,
+  onSelectCallback,
+  updateBlockContent,
+  deleteBlock,
+  duplicateBlock,
+  addBlockAbove,
+  handleDragStart,
+  handleDragOver,
+  handleDrop,
+  dropIndicator,
+  onHeightMeasured,
+  isLastPage,
+}: {
+  pageIndex: number;
+  pageBlocks: Block[];
+  globalStartIndex: number;
+  totalBlocks: number;
+  selectedBlockId: string | null;
+  onSelectCallback: (id: string | null) => void;
+  updateBlockContent: (id: string, updates: any) => void;
+  deleteBlock: (id: string, e?: React.MouseEvent) => void;
+  duplicateBlock: (id: string, e?: React.MouseEvent) => void;
+  addBlockAbove: (id: string, type: string, e?: React.MouseEvent) => void;
+  handleDragStart: (e: React.DragEvent, item: any) => void;
+  handleDragOver: (e: React.DragEvent, index: number) => void;
+  handleDrop: (e: React.DragEvent, index: number) => void;
+  dropIndicator: number | null;
+  onHeightMeasured: (id: string, h: number) => void;
+  isLastPage: boolean;
+}) {
+  return (
+    <div
+      style={{
+        width: A4_WIDTH,
+        minHeight: A4_HEIGHT,
+        backgroundColor: "#ffffff",
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.10), 0 4px 24px rgba(0,0,0,0.06)",
+        position: "relative",
+      }}
+    >
+      {/* Page number */}
+      <div
+        style={{
+          position: "absolute",
+          top: -18,
+          right: 0,
+          fontSize: 10,
+          color: "#aaaaaa",
+          userSelect: "none",
+          fontFamily: "monospace",
+        }}
+      >
+        {pageIndex + 1}
+      </div>
+
+      <LockedHeader />
+
+      {/* Content area */}
+      <div
+        style={{
+          flex: 1,
+          padding: `${CONTENT_MARGIN_TOP}px ${CONTENT_PADDING_H}px 0`,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onSelectCallback(null);
+        }}
+      >
+        {pageBlocks.length === 0 && isLastPage && (
+          <div
+            className="flex-1 flex flex-col items-center justify-center select-none"
+            style={{ color: "#cccccc", gap: 8 }}
+            onDragOver={(e) => handleDragOver(e, globalStartIndex)}
+            onDrop={(e) => handleDrop(e, globalStartIndex)}
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>
+              Drag blocks here or click one in the sidebar
+            </span>
+          </div>
+        )}
+
+        {pageBlocks.map((block, localIdx) => {
+          const globalIdx = globalStartIndex + localIdx;
+          return (
+            <BlockRenderer
+              key={block.id}
+              block={block}
+              index={globalIdx}
+              isSelected={selectedBlockId === block.id}
+              isPreview={false}
+              onSelect={onSelectCallback}
+              updateBlockContent={updateBlockContent}
+              deleteBlock={deleteBlock}
+              duplicateBlock={duplicateBlock}
+              addBlockAbove={addBlockAbove}
+              handleDragStart={handleDragStart}
+              handleDragOver={handleDragOver}
+              handleDrop={handleDrop}
+              dropIndicator={dropIndicator}
+              onHeightMeasured={onHeightMeasured}
+            />
+          );
+        })}
+
+        {/* Drop zone at page bottom */}
+        <div
+          style={{ minHeight: CONTENT_MARGIN_BTM, flex: 1, position: "relative" }}
+          onDragOver={(e) => handleDragOver(e, globalStartIndex + pageBlocks.length)}
+          onDrop={(e) => handleDrop(e, globalStartIndex + pageBlocks.length)}
+        >
+          {dropIndicator === globalStartIndex + pageBlocks.length && (
+            <div style={{ position: "absolute", top: 4, left: 0, right: 0, display: "flex", alignItems: "center" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#3b82f6", flexShrink: 0 }} />
+              <div style={{ flex: 1, height: 2, backgroundColor: "#3b82f6" }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <LockedFooter />
+    </div>
+  );
+}
 
 export function EditorCanvas({
   blocks,
@@ -31,149 +285,88 @@ export function EditorCanvas({
   handleDragOver,
   handleDrop,
   dropIndicator,
+  zoom,
 }: EditorCanvasProps) {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [totalPages, setTotalPages] = useState(1);
+  const [blockHeights, setBlockHeights] = useState<Map<string, number>>(new Map());
+  const [usableH, setUsableH] = useState(USABLE_H);
 
-  // Measure content to dynamically render A4 Page Breaks
+  // Measure one header + footer to get accurate usable height
+  const headerRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!canvasRef.current) return;
-    
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const height = entry.contentRect.height;
-        const pagesNeeded = Math.max(1, Math.ceil(height / A4_HEIGHT));
-        if (pagesNeeded !== totalPages) {
-          setTotalPages(pagesNeeded);
-        }
-      }
+    const hh = headerRef.current?.offsetHeight ?? APPROX_HEADER_H;
+    const fh = footerRef.current?.offsetHeight ?? APPROX_FOOTER_H;
+    setUsableH(A4_HEIGHT - hh - fh - CONTENT_MARGIN_TOP - CONTENT_MARGIN_BTM);
+  }, []);
+
+  const handleBlockHeight = useCallback((id: string, h: number) => {
+    setBlockHeights((prev) => {
+      if (prev.get(id) === h) return prev;
+      const next = new Map(prev);
+      next.set(id, h);
+      return next;
     });
+  }, []);
 
-    observer.observe(canvasRef.current);
-    return () => observer.disconnect();
-  }, [totalPages]);
+  const pageGroups = distributeToPages(blocks, blockHeights, usableH);
 
-  const renderLockedHeader = () => (
-    <div className="relative group mb-8 pointer-events-none select-none">
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-300">
-        <Lock size={16} />
-      </div>
-      <div style={{ backgroundColor: "#1a1a1a", padding: "20px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-bold text-[#1a1a1a] text-[15px]">
-            {sampleBrand.initials}
-          </div>
-          <div>
-            <div className="text-white font-bold text-[18px]">{sampleBrand.companyName}</div>
-            <div className="text-white/60 text-[12px]">{sampleBrand.tagline}</div>
-          </div>
-        </div>
-        <div className="text-white text-[11px] text-right opacity-80 leading-relaxed">
-          {sampleBrand.email}<br/>
-          {sampleBrand.phone}<br/>
-          {sampleBrand.website}<br/>
-          {sampleBrand.address}
-        </div>
-      </div>
-      <div style={{ height: "3px", backgroundColor: sampleBrand.secondaryColor, width: "100%" }} />
-    </div>
-  );
-
-  const renderLockedFooter = () => (
-    <div className="relative group mt-12 pointer-events-none select-none w-full">
-      <div className="absolute flex flex-col justify-center top-0 right-4 opacity-0 group-hover:opacity-100 text-gray-300 -translate-y-full pb-2">
-        <Lock size={16} />
-      </div>
-      <div style={{ backgroundColor: "#ffffff", padding: "14px 32px 0 32px", borderTop: "1px solid #e5e5e5", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-        <div className="text-[11px] text-gray-400">{sampleBrand.website}</div>
-        <div className="flex-1 mx-4 h-[1px] bg-[#1a1a1a] opacity-20"></div>
-        <div className="text-[11px] text-gray-400">{sampleBrand.companyName}</div>
-      </div>
-      <div style={{ height: "4px", backgroundColor: "#1a1a1a", width: "100%", marginTop: "14px" }} />
-    </div>
-  );
+  // globalStartIndex for each page
+  const pageOffsets: number[] = [];
+  let offset = 0;
+  for (const pg of pageGroups) {
+    pageOffsets.push(offset);
+    offset += pg.length;
+  }
 
   return (
-    <div 
-      className="flex-1 overflow-y-auto bg-gray-100 p-8 flex flex-col items-center relative"
+    <div
+      className="flex-1 overflow-auto bg-[#e8e8e8] flex flex-col items-center py-10"
       onClick={(e) => {
         if (e.target === e.currentTarget) onSelectCallback(null);
       }}
     >
-      {/* Background Page Mattes (Seamless Pageless View) */}
-      <div 
-        className="absolute top-8 w-[794px] pointer-events-none z-0 flex flex-col bg-white shadow-md border border-gray-200" 
-        style={{ minHeight: `${totalPages * A4_HEIGHT}px` }}
+      {/* Zoom wrapper */}
+      <div
+        style={{
+          transform: `scale(${zoom / 100})`,
+          transformOrigin: "top center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: PAGE_GAP,
+          paddingBottom: 40,
+          flexShrink: 0,
+        }}
       >
-        {Array.from({ length: totalPages }).map((_, i) => (
-          <div 
-            key={i} 
-            className="w-full relative" 
-            style={{ 
-              height: `${A4_HEIGHT}px`,
-              borderBottom: i < totalPages - 1 ? '1px dashed #d1d5db' : 'none'
-            }} 
-          >
-            {i < totalPages - 1 && (
-              <span className="absolute bottom-1 right-2 text-[10px] text-gray-400">Page {i + 1}</span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div 
-        ref={canvasRef}
-        className="w-[794px] bg-transparent flex flex-col origin-top z-10 min-h-[1123px] relative"
-        onClick={() => onSelectCallback(null)}
-      >
-        {renderLockedHeader()}
-        
-        <div className={`flex-1 flex flex-col mx-12 ${blocks.length === 0 ? 'border-2 border-dashed border-gray-200' : ''}`}>
-          {blocks.length === 0 && (
-            <div 
-              className="flex-1 flex items-center justify-center text-gray-400 font-medium"
-              onDragOver={(e) => handleDragOver(e, 0)}
-              onDrop={(e) => handleDrop(e, 0)}
-            >
-              Drag a block here to start, or click to type
-            </div>
-          )}
-          
-          {blocks.map((block, index) => (
-            <BlockRenderer 
-              key={block.id}
-              block={block} 
-              index={index}
-              isSelected={selectedBlockId === block.id}
-              isPreview={false}
-              onSelect={onSelectCallback}
-              updateBlockContent={updateBlockContent}
-              deleteBlock={deleteBlock}
-              duplicateBlock={duplicateBlock}
-              addBlockAbove={addBlockAbove}
-              handleDragStart={handleDragStart}
-              handleDragOver={handleDragOver}
-              handleDrop={handleDrop}
-              dropIndicator={dropIndicator}
-            />
-          ))}
-          
-          {/* Drop zone at the very bottom */}
-          <div 
-            className="h-8 w-full mt-2 relative"
-            onDragOver={(e) => handleDragOver(e, blocks.length)}
-            onDrop={(e) => handleDrop(e, blocks.length)}
-          >
-            {dropIndicator === blocks.length && (
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-2 h-2 rounded-full bg-blue-500 z-10" />
-                <div className="h-[2px] bg-blue-500 w-full" />
-              </div>
-            )}
-          </div>
+        {/* Hidden refs to measure header/footer heights accurately */}
+        <div ref={headerRef} style={{ position: "absolute", visibility: "hidden", width: A4_WIDTH }}>
+          <LockedHeader />
+        </div>
+        <div ref={footerRef} style={{ position: "absolute", visibility: "hidden", width: A4_WIDTH }}>
+          <LockedFooter />
         </div>
 
-        {renderLockedFooter()}
+        {pageGroups.map((pageBlocks, pageIdx) => (
+          <PageCard
+            key={pageIdx}
+            pageIndex={pageIdx}
+            pageBlocks={pageBlocks}
+            globalStartIndex={pageOffsets[pageIdx]}
+            totalBlocks={blocks.length}
+            selectedBlockId={selectedBlockId}
+            onSelectCallback={onSelectCallback}
+            updateBlockContent={updateBlockContent}
+            deleteBlock={deleteBlock}
+            duplicateBlock={duplicateBlock}
+            addBlockAbove={addBlockAbove}
+            handleDragStart={handleDragStart}
+            handleDragOver={handleDragOver}
+            handleDrop={handleDrop}
+            dropIndicator={dropIndicator}
+            onHeightMeasured={handleBlockHeight}
+            isLastPage={pageIdx === pageGroups.length - 1}
+          />
+        ))}
       </div>
     </div>
   );

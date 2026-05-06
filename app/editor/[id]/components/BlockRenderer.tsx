@@ -1,12 +1,22 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
 import { Block, sampleBrand } from "./types";
-import { GripVertical, Trash2, Copy, Plus } from "lucide-react";
+import {
+  GripVertical,
+  Trash2,
+  Copy,
+  Plus,
+  PlusCircle,
+  MinusCircle,
+} from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
+import { BlockAddMenu } from "./BlockAddMenu";
 
 interface BlockRendererProps {
   block: Block;
@@ -22,6 +32,74 @@ interface BlockRendererProps {
   handleDragOver: (e: React.DragEvent, index: number) => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   dropIndicator: number | null;
+  onHeightMeasured?: (id: string, height: number) => void;
+}
+
+function getSplitFlex(split: string, side: "left" | "right"): number {
+  const map: Record<string, [number, number]> = {
+    "50/50": [1, 1],
+    "60/40": [1.5, 1],
+    "40/60": [1, 1.5],
+    "70/30": [2.33, 1],
+    "30/70": [1, 2.33],
+  };
+  const [l, r] = map[split] ?? [1, 1];
+  return side === "left" ? l : r;
+}
+
+function TextBubbleMenu({ editor }: { editor: ReturnType<typeof useEditor> }) {
+  if (!editor) return null;
+  return (
+    <BubbleMenu
+      editor={editor}
+      className="flex bg-white shadow-xl border border-gray-100 rounded-lg p-1 gap-0.5 z-50"
+    >
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleBold().run();
+        }}
+        className={`px-2 py-1 rounded-md text-sm font-bold hover:bg-gray-100 transition-colors ${editor.isActive("bold") ? "bg-blue-50 text-blue-600" : "text-gray-700"}`}
+      >
+        B
+      </button>
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleItalic().run();
+        }}
+        className={`px-2 py-1 rounded-md text-sm italic hover:bg-gray-100 transition-colors ${editor.isActive("italic") ? "bg-blue-50 text-blue-600" : "text-gray-700"}`}
+      >
+        I
+      </button>
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleUnderline().run();
+        }}
+        className={`px-2 py-1 rounded-md text-sm underline hover:bg-gray-100 transition-colors ${editor.isActive("underline") ? "bg-blue-50 text-blue-600" : "text-gray-700"}`}
+      >
+        U
+      </button>
+      <div className="w-px bg-gray-200 h-5 mx-0.5 self-center" />
+      {[
+        { color: "#ef4444", bg: "bg-red-500" },
+        { color: "#3b82f6", bg: "bg-blue-500" },
+        { color: "#10b981", bg: "bg-emerald-500" },
+        { color: "#f59e0b", bg: "bg-amber-400" },
+        { color: "#1a1a1a", bg: "bg-gray-900" },
+      ].map(({ color, bg }) => (
+        <button
+          key={color}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            editor.chain().focus().setColor(color).run();
+          }}
+          className={`w-5 h-5 rounded-full ${bg} self-center border border-white/50 hover:scale-110 transition-transform shadow-sm`}
+        />
+      ))}
+    </BubbleMenu>
+  );
 }
 
 export function BlockRenderer({
@@ -37,138 +115,285 @@ export function BlockRenderer({
   handleDragStart,
   handleDragOver,
   handleDrop,
-  dropIndicator
+  dropIndicator,
+  onHeightMeasured,
 }: BlockRendererProps) {
-  
-  // Initialize Tiptap Editor for Text Blocks
-  const isEditableText = ['heading', 'subheading', 'paragraph', 'blockquote'].includes(block.type);
-  
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!wrapperRef.current || !onHeightMeasured) return;
+    const el = wrapperRef.current;
+    const obs = new ResizeObserver(() => {
+      onHeightMeasured(block.id, el.offsetHeight);
+    });
+    obs.observe(el);
+    onHeightMeasured(block.id, el.offsetHeight);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [block.id]);
+
+  const isEditableText = ["heading", "subheading", "paragraph", "blockquote"].includes(
+    block.type,
+  );
+
   const editor = useEditor({
     extensions: [StarterKit, Underline, TextStyle, Color],
     content: block.content.text || "",
-    editable: !isPreview,
+    editable: !isPreview && isEditableText,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      // Keep state in sync without forcing re-renders of the whole page on every keystroke
       updateBlockContent(block.id, { text: editor.getHTML() });
     },
   });
 
-  // Whenever external content changes (e.g. undo), we sync Tiptap
-  // This is a simplified reliable sync approach
   useEffect(() => {
     if (editor && block.content.text !== editor.getHTML()) {
-       // A deeper check can be done, but keeping it simple to prevent cursor jumps
-       // if we only update on external events
-       if (document.activeElement?.closest('.ProseMirror') === editor.view.dom) return;
-       editor.commands.setContent(block.content.text);
+      if (document.activeElement?.closest(".ProseMirror") === editor.view.dom)
+        return;
+      editor.commands.setContent(block.content.text);
     }
   }, [block.content.text, editor]);
 
-  let innerContent = null;
+  let innerContent: React.ReactNode = null;
 
   switch (block.type) {
     case "heading":
     case "subheading":
     case "paragraph":
-      const Tag = block.type === "heading" ? "h1" : block.type === "subheading" ? "h2" : "p";
-      // We wrap the tiptap editor with our own inline styles context so it looks right
       innerContent = (
-        <div style={{
-          fontSize: `${block.style.fontSize}px`,
-          fontWeight: block.style.fontWeight || (block.type === 'heading' ? 600 : 400),
-          color: block.style.color,
-          textAlign: block.style.textAlign || "left",
-          lineHeight: block.style.lineHeight || 1.5,
-          margin: 0
-        }}>
-          {editor && !isPreview && isSelected && (
-            <BubbleMenu editor={editor} className="flex bg-white shadow-lg border rounded-md p-1 gap-1 -translate-y-2 z-50">
-              <button 
-                onClick={() => editor.chain().focus().toggleBold().run()} 
-                className={`p-1.5 rounded hover:bg-gray-100 ${editor.isActive('bold') ? 'bg-gray-100 text-blue-600 font-bold' : 'text-gray-700'}`}
-              >
-                B
-              </button>
-              <button 
-                onClick={() => editor.chain().focus().toggleItalic().run()} 
-                className={`p-1.5 rounded hover:bg-gray-100 italic ${editor.isActive('italic') ? 'bg-gray-100 text-blue-600' : 'text-gray-700'}`}
-              >
-                I
-              </button>
-              <button 
-                onClick={() => editor.chain().focus().toggleUnderline().run()} 
-                className={`p-1.5 rounded hover:bg-gray-100 underline ${editor.isActive('underline') ? 'bg-gray-100 text-blue-600' : 'text-gray-700'}`}
-              >
-                U
-              </button>
-              <div className="w-[1px] bg-gray-200 h-6 my-auto mx-1"></div>
-              {/* Preset colors for brevity */}
-              <button onClick={() => editor.chain().focus().setColor('#ef4444').run()} className="w-6 h-6 rounded-full bg-red-500 my-auto ml-1 border hover:scale-110 transition-transform"></button>
-              <button onClick={() => editor.chain().focus().setColor('#3b82f6').run()} className="w-6 h-6 rounded-full bg-blue-500 my-auto border hover:scale-110 transition-transform"></button>
-              <button onClick={() => editor.chain().focus().setColor('#1a1a1a').run()} className="w-6 h-6 rounded-full bg-[#1a1a1a] mr-1 my-auto border hover:scale-110 transition-transform"></button>
-            </BubbleMenu>
-          )}
+        <div
+          style={{
+            fontSize: `${block.style.fontSize}px`,
+            fontWeight:
+              block.style.fontWeight ??
+              (block.type === "heading" ? 700 : block.type === "subheading" ? 600 : 400),
+            color: block.style.color,
+            textAlign: block.style.textAlign || "left",
+            lineHeight: block.style.lineHeight || 1.5,
+            margin: 0,
+          }}
+        >
+          {editor && !isPreview && isSelected && <TextBubbleMenu editor={editor} />}
           <EditorContent editor={editor} className="outline-none" />
         </div>
       );
       break;
+
+    case "blockquote":
+      innerContent = (
+        <div
+          style={{
+            borderLeft: `4px solid ${block.style.borderColor || sampleBrand.secondaryColor}`,
+            paddingLeft: "20px",
+            margin: "0",
+            fontStyle: block.style.fontStyle ?? "italic",
+            fontSize: `${block.style.fontSize || 14}px`,
+            color: block.style.color || "#555555",
+            lineHeight: block.style.lineHeight || 1.7,
+          }}
+        >
+          {editor && !isPreview && isSelected && <TextBubbleMenu editor={editor} />}
+          <EditorContent editor={editor} className="outline-none" />
+        </div>
+      );
+      break;
+
     case "divider":
       innerContent = (
-        <div style={{ padding: `${block.style.marginTop || 8}px 0 ${block.style.marginBottom || 8}px 0`, display: 'flex', justifyContent: 'center' }}>
-          <div style={{
-            width: block.style.width === "75%" ? "75%" : block.style.width === "50%" ? "50%" : "100%",
-            borderBottom: `${block.style.thickness}px ${block.style.style || 'solid'} ${block.style.color}`
-          }} />
+        <div
+          style={{
+            padding: `${block.style.marginTop ?? 8}px 0 ${block.style.marginBottom ?? 8}px 0`,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              width:
+                block.style.width === "75%"
+                  ? "75%"
+                  : block.style.width === "50%"
+                    ? "50%"
+                    : "100%",
+              borderBottom: `${block.style.thickness ?? 1}px ${block.style.style || "solid"} ${block.style.color || "#e5e5e5"}`,
+            }}
+          />
         </div>
       );
       break;
+
     case "spacer":
-      innerContent = <div style={{ height: `${block.style.height}px` }} />;
+      innerContent = (
+        <div
+          style={{ height: `${block.style.height}px` }}
+          className={
+            !isPreview
+              ? "flex items-center justify-center text-gray-300 text-xs font-medium select-none"
+              : ""
+          }
+        >
+          {!isPreview && `↕ ${block.style.height}px spacer`}
+        </div>
+      );
       break;
+
     case "two-columns":
       innerContent = (
-        <div style={{ display: "flex", gap: `${block.style.gap}px` }}>
-          <div style={{ flex: block.style.split === '50/50' ? 1 : block.style.split === '60/40' ? 1.5 : block.style.split === '40/60' ? 0.66 : block.style.split === '70/30' ? 2.33 : 1 }}>
-            {block.content.left?.heading && <h3 style={{ fontWeight: 600, marginBottom: "8px", color: "#1a1a1a", fontSize: "14px" }}>{block.content.left.heading}</h3>}
+        <div style={{ display: "flex", gap: `${block.style.gap ?? 24}px` }}>
+          <div style={{ flex: getSplitFlex(block.style.split, "left") }}>
+            {block.content.left?.heading && (
+              <h3
+                style={{ fontWeight: 600, marginBottom: "8px", color: "#1a1a1a", fontSize: "14px" }}
+              >
+                {block.content.left.heading}
+              </h3>
+            )}
             {block.content.left?.items?.length > 0 && (
               <ul className="list-disc pl-5" style={{ fontSize: "14px", color: "#444444" }}>
-                {block.content.left.items.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                {block.content.left.items.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
               </ul>
             )}
+            {!block.content.left?.heading && !block.content.left?.items?.length && (
+              <p className="text-gray-300 italic text-sm">Left column…</p>
+            )}
           </div>
-          <div style={{ flex: block.style.split === '50/50' ? 1 : block.style.split === '60/40' ? 0.66 : block.style.split === '40/60' ? 1.5 : block.style.split === '70/30' ? 0.42 : 1 }}>
-            {block.content.right?.heading && <h3 style={{ fontWeight: 600, marginBottom: "8px", color: "#1a1a1a", fontSize: "14px" }}>{block.content.right.heading}</h3>}
+          <div style={{ flex: getSplitFlex(block.style.split, "right") }}>
+            {block.content.right?.heading && (
+              <h3
+                style={{ fontWeight: 600, marginBottom: "8px", color: "#1a1a1a", fontSize: "14px" }}
+              >
+                {block.content.right.heading}
+              </h3>
+            )}
             {block.content.right?.items?.length > 0 && (
               <ul className="list-disc pl-5" style={{ fontSize: "14px", color: "#444444" }}>
-                {block.content.right.items.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                {block.content.right.items.map((item: string, i: number) => (
+                  <li key={i}>{item}</li>
+                ))}
               </ul>
+            )}
+            {!block.content.right?.heading && !block.content.right?.items?.length && (
+              <p className="text-gray-300 italic text-sm">Right column…</p>
             )}
           </div>
         </div>
       );
       break;
+
+    case "three-columns": {
+      const cols = [
+        { key: "col1", value: block.content.col1 || "" },
+        { key: "col2", value: block.content.col2 || "" },
+        { key: "col3", value: block.content.col3 || "" },
+      ];
+      innerContent = (
+        <div style={{ display: "flex", gap: `${block.style.gap ?? 24}px` }}>
+          {cols.map(({ key, value }, i) => (
+            <div
+              key={key}
+              style={{
+                flex: 1,
+                fontSize: "14px",
+                color: "#444444",
+                lineHeight: 1.6,
+                minHeight: "48px",
+                outline: "none",
+                borderBottom: !isPreview ? "1px dashed #e5e5e5" : "none",
+                paddingBottom: "4px",
+              }}
+              contentEditable={!isPreview}
+              suppressContentEditableWarning
+              onBlur={(e) =>
+                updateBlockContent(block.id, {
+                  [key]: e.currentTarget.textContent || "",
+                })
+              }
+              dangerouslySetInnerHTML={{
+                __html: value || (!isPreview ? `<span style="color:#ccc">Column ${i + 1}…</span>` : ""),
+              }}
+            />
+          ))}
+        </div>
+      );
+      break;
+    }
+
     case "table":
       innerContent = (
-        <table className="w-full text-left border-collapse" style={{ fontSize: "14px", color: "#1a1a1a" }}>
+        <table
+          className="w-full text-left border-collapse"
+          style={{ fontSize: "14px", color: "#1a1a1a" }}
+        >
           <thead>
-            <tr style={{ backgroundColor: block.style.headerBg }}>
+            <tr style={{ backgroundColor: block.style.headerBg || "#f5f5f5" }}>
               {block.content.headers?.map((h: string, i: number) => (
-                <th key={i} className="p-3 border-b" style={{ borderColor: block.style.borderStyle === 'none' ? 'transparent' : '#e5e5e5' }}>{h}</th>
+                <th
+                  key={i}
+                  className="p-3 border-b font-semibold"
+                  style={{
+                    borderColor:
+                      block.style.borderStyle === "none" ? "transparent" : "#e5e5e5",
+                  }}
+                  contentEditable={!isPreview}
+                  suppressContentEditableWarning
+                  onBlur={(e) => {
+                    const newHeaders = [...block.content.headers];
+                    newHeaders[i] = e.currentTarget.textContent || "";
+                    updateBlockContent(block.id, { headers: newHeaders });
+                  }}
+                  dangerouslySetInnerHTML={{ __html: h }}
+                />
               ))}
             </tr>
           </thead>
           <tbody>
-            {block.content.rows?.map((row: string[], i: number) => (
-              <tr key={i} style={{ backgroundColor: block.style.alternating && i % 2 === 1 ? "#fafafa" : "transparent" }}>
-                {row.map((cell: string, j: number) => (
-                  <td key={j} className="p-3 border-b" style={{ borderColor: block.style.borderStyle === 'none' ? 'transparent' : '#e5e5e5' }}>{cell}</td>
+            {block.content.rows?.map((row: string[], ri: number) => (
+              <tr
+                key={ri}
+                style={{
+                  backgroundColor:
+                    block.style.alternating && ri % 2 === 1 ? "#fafafa" : "transparent",
+                }}
+              >
+                {row.map((cell: string, ci: number) => (
+                  <td
+                    key={ci}
+                    className="p-3 border-b"
+                    style={{
+                      borderColor:
+                        block.style.borderStyle === "none" ? "transparent" : "#e5e5e5",
+                    }}
+                    contentEditable={!isPreview}
+                    suppressContentEditableWarning
+                    onBlur={(e) => {
+                      const newRows = block.content.rows.map(
+                        (r: string[], rIdx: number) =>
+                          rIdx === ri
+                            ? r.map((c: string, cIdx: number) =>
+                                cIdx === ci ? e.currentTarget.textContent || "" : c,
+                              )
+                            : r,
+                      );
+                      updateBlockContent(block.id, { rows: newRows });
+                    }}
+                    dangerouslySetInnerHTML={{ __html: cell }}
+                  />
                 ))}
               </tr>
             ))}
             {block.content.totalsRow && (
               <tr>
-                <td colSpan={block.content.headers?.length || 1} className="p-3 text-right font-medium" style={{ borderTop: block.style.borderStyle !== 'none' ? '2px solid #e5e5e5' : 'none' }}>
+                <td
+                  colSpan={block.content.headers?.length || 1}
+                  className="p-3 text-right font-semibold"
+                  style={{
+                    borderTop:
+                      block.style.borderStyle !== "none" ? "2px solid #e5e5e5" : "none",
+                  }}
+                >
                   {block.content.totalsRow}
                 </td>
               </tr>
@@ -177,93 +402,344 @@ export function BlockRenderer({
         </table>
       );
       break;
+
+    case "bullet-list":
+    case "numbered-list": {
+      const isOrdered = block.type === "numbered-list";
+      const ListTag = isOrdered ? "ol" : "ul";
+      const items: string[] = block.content.items || [];
+
+      innerContent = (
+        <ListTag
+          style={{
+            listStyleType: isOrdered
+              ? block.style.listStyleType || "decimal"
+              : block.style.listStyleType || "disc",
+            paddingLeft: "1.5rem",
+            fontSize: `${block.style.fontSize || 14}px`,
+            color: block.style.color || "#444444",
+            lineHeight: block.style.lineHeight || 1.7,
+          }}
+        >
+          {items.map((item: string, i: number) => (
+            <li key={i} className="group/listitem py-0.5">
+              <span className="flex items-start gap-1">
+                <span
+                  contentEditable={!isPreview}
+                  suppressContentEditableWarning
+                  style={{ flex: 1, outline: "none", minWidth: 0 }}
+                  onBlur={(e) => {
+                    const newItems = [...items];
+                    newItems[i] = e.currentTarget.textContent || "";
+                    updateBlockContent(block.id, { items: newItems });
+                  }}
+                  dangerouslySetInnerHTML={{ __html: item }}
+                />
+                {!isPreview && (
+                  <button
+                    className="opacity-0 group-hover/listitem:opacity-100 text-gray-300 hover:text-red-400 transition-all flex-shrink-0 mt-0.5"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newItems = items.filter((_: string, idx: number) => idx !== i);
+                      updateBlockContent(block.id, { items: newItems });
+                    }}
+                  >
+                    <MinusCircle size={13} />
+                  </button>
+                )}
+              </span>
+            </li>
+          ))}
+          {!isPreview && (
+            <li className="list-none -ml-4 mt-2">
+              <button
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-500 transition-colors font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateBlockContent(block.id, { items: [...items, "New item"] });
+                }}
+              >
+                <PlusCircle size={13} />
+                Add item
+              </button>
+            </li>
+          )}
+        </ListTag>
+      );
+      break;
+    }
+
     case "signature":
       innerContent = (
         <div style={{ marginTop: "24px", color: "#1a1a1a", fontSize: "14px" }}>
-          <p>{block.content.closing}</p>
-          {block.style.showLine && (
-            <div style={{ marginTop: "40px", marginBottom: "8px", width: "200px", borderBottom: block.style.lineStyle === 'dotted' ? '2px dotted #1a1a1a' : '1px solid #1a1a1a' }}></div>
+          <p style={{ color: "#666666" }}>{block.content.closing || "Sincerely,"}</p>
+          {block.style.showLine ? (
+            <div
+              style={{
+                marginTop: "44px",
+                marginBottom: "8px",
+                width: "220px",
+                borderBottom:
+                  block.style.lineStyle === "dotted"
+                    ? "2px dotted #aaaaaa"
+                    : "1px solid #aaaaaa",
+              }}
+            />
+          ) : (
+            <div style={{ height: "44px" }} />
           )}
-          {!block.style.showLine && <div style={{ height: "40px" }} />}
-          {block.style.lineStyle === "Sign here" && <p className="text-xs text-gray-400 mt-[-4px] mb-2">Sign here</p>}
-          <p style={{ fontWeight: 500 }}>{block.content.name} — {block.content.title} — {block.content.email}</p>
+          {block.style.lineStyle === "Sign here" && (
+            <p className="text-xs text-gray-400 mt-[-4px] mb-2">Sign here</p>
+          )}
+          <p style={{ fontWeight: 600 }}>{block.content.name || "Name"}</p>
+          {block.content.title && (
+            <p style={{ color: "#666666" }}>{block.content.title}</p>
+          )}
+          {block.content.email && (
+            <p style={{ color: "#888888", fontSize: "13px" }}>{block.content.email}</p>
+          )}
         </div>
       );
       break;
-    case "bullet-list":
+
+    case "button":
       innerContent = (
-        <ul style={{ listStyleType: block.style.listStyleType || "disc", paddingLeft: "1.5rem", fontSize: `${block.style.fontSize || 14}px`, color: block.style.color || "#444444" }}>
-          {block.content.items?.map((item: string, i: number) => <li key={i}>{item}</li>)}
-        </ul>
+        <div style={{ textAlign: block.style.textAlign || "left" }}>
+          <div
+            style={{
+              display: "inline-block",
+              backgroundColor: block.style.bgColor || sampleBrand.primaryColor,
+              color: block.style.color || "#ffffff",
+              padding: `${block.style.paddingY ?? 10}px ${block.style.paddingX ?? 24}px`,
+              borderRadius: `${block.style.borderRadius ?? 6}px`,
+              fontSize: `${block.style.fontSize || 14}px`,
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+              cursor: "default",
+            }}
+          >
+            {block.content.text || "Click here"}
+          </div>
+        </div>
       );
       break;
-    case "brand-color-bar":
-      const color = block.style.color === 'Secondary' ? sampleBrand.secondaryColor : sampleBrand.primaryColor;
-      innerContent = <div style={{ width: "100%", height: `${block.style.height || 4}px`, backgroundColor: color }} />;
+
+    case "image-placeholder":
+      innerContent = (
+        <div
+          style={{
+            width: block.style.width || "100%",
+            height: `${block.style.height || 200}px`,
+            border: "2px dashed #d1d5db",
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f9fafb",
+            color: "#9ca3af",
+            fontSize: "13px",
+            gap: "10px",
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="36"
+            height="36"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.2}
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="m21 15-5-5L5 21" />
+          </svg>
+          <span className="font-medium">Click to add image</span>
+        </div>
+      );
       break;
+
+    case "brand-color-bar": {
+      const barColor =
+        block.style.color === "Secondary"
+          ? sampleBrand.secondaryColor
+          : sampleBrand.primaryColor;
+      innerContent = (
+        <div
+          style={{
+            width: "100%",
+            height: `${block.style.height || 4}px`,
+            backgroundColor: barColor,
+            borderRadius: "2px",
+          }}
+        />
+      );
+      break;
+    }
+
+    case "company-stamp":
+      innerContent = (
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div
+            style={{
+              width: `${block.style.size || 80}px`,
+              height: `${block.style.size || 80}px`,
+              borderRadius: "50%",
+              backgroundColor: sampleBrand.primaryColor,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              fontSize: `${Math.floor((block.style.size || 80) * 0.35)}px`,
+              fontWeight: 800,
+              flexShrink: 0,
+              letterSpacing: "0.05em",
+            }}
+          >
+            {sampleBrand.initials}
+          </div>
+          <div>
+            <div
+              style={{ fontWeight: 700, fontSize: "16px", color: sampleBrand.primaryColor }}
+            >
+              {sampleBrand.companyName}
+            </div>
+            <div style={{ fontSize: "12px", color: "#888888", marginTop: "2px" }}>
+              {sampleBrand.tagline}
+            </div>
+            <div style={{ fontSize: "11px", color: "#aaaaaa", marginTop: "4px" }}>
+              {sampleBrand.website}
+            </div>
+          </div>
+        </div>
+      );
+      break;
+
     default:
-      innerContent = <div className="text-gray-400 italic">[{block.type}] block placeholder</div>;
+      innerContent = (
+        <div className="text-gray-300 italic text-xs">[{block.type}]</div>
+      );
   }
 
   if (isPreview) {
     return (
-      <div key={block.id} style={{ padding: "8px 0" }}>
+      <div style={{ padding: "5px 0" }}>
         {innerContent}
       </div>
     );
   }
 
   return (
-    <div key={block.id}>
-      {/* Drop zone above */}
-      <div 
-        className="h-2 w-full transition-colors relative"
+    <div ref={wrapperRef} className="relative">
+      {/* Drop indicator above */}
+      <div
+        style={{ height: 6, position: "relative" }}
         onDragOver={(e) => handleDragOver(e, index)}
         onDrop={(e) => handleDrop(e, index)}
       >
         {dropIndicator === index && (
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-2 h-2 rounded-full bg-blue-500 z-10" />
-            <div className="h-[2px] bg-blue-500 w-full" />
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#3b82f6", flexShrink: 0 }} />
+            <div style={{ flex: 1, height: 2, backgroundColor: "#3b82f6" }} />
           </div>
         )}
       </div>
 
-      {/* Block Body */}
-      <div 
-        className={`relative group cursor-text p-2 -mx-2 transition-all border-l-2 ${isSelected ? 'border-blue-500 bg-blue-50/20' : 'border-transparent hover:border-blue-200'}`}
+      {/* Block body */}
+      <div
+        className="relative group"
+        style={{
+          borderLeft: isSelected ? "2px solid #3b82f6" : "2px solid transparent",
+          backgroundColor: isSelected ? "rgba(59,130,246,0.03)" : "transparent",
+          paddingLeft: 10,
+          paddingTop: 2,
+          paddingBottom: 2,
+          transition: "border-color 0.1s, background-color 0.1s",
+          cursor: "text",
+        }}
+        onMouseEnter={(e) => {
+          if (!isSelected) {
+            (e.currentTarget as HTMLElement).style.borderLeftColor = "#bfdbfe";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected) {
+            (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent";
+          }
+        }}
         onClick={() => {
           onSelect(block.id);
-          editor?.commands.focus();
+          if (isEditableText) editor?.commands.focus();
         }}
       >
-        {/* Action Bar (Hover) */}
-        <div className="absolute top-0 -left-6 opacity-0 group-hover:opacity-100 flex items-center h-full cursor-grab">
-          <div 
-            draggable 
-            onDragStart={(e) => handleDragStart(e, { id: block.id, type: block.type, isSidebar: false })}
-            className="p-1 hover:bg-gray-100 rounded text-gray-400"
+        {/* Drag handle */}
+        <div className="absolute top-0 -left-7 opacity-0 group-hover:opacity-100 flex items-center h-full pointer-events-none group-hover:pointer-events-auto">
+          <div
+            draggable
+            onDragStart={(e) =>
+              handleDragStart(e, { id: block.id, type: block.type, isSidebar: false })
+            }
+            style={{ padding: 4, color: "#cccccc", cursor: "grab" }}
+            className="hover:bg-gray-100 transition-colors"
           >
-            <GripVertical size={16} />
+            <GripVertical size={13} />
           </div>
         </div>
 
-        <div className="absolute top-0 right-2 opacity-0 group-hover:opacity-100 flex gap-1 z-10 p-1 bg-white border shadow-sm rounded">
-          <button className="p-1 hover:bg-gray-100 rounded text-gray-500" onClick={(e) => duplicateBlock(block.id, e)}><Copy size={14} /></button>
-          <button className="p-1 hover:bg-red-50 rounded text-red-500" onClick={(e) => deleteBlock(block.id, e)}><Trash2 size={14} /></button>
+        {/* Action buttons */}
+        <div
+          className="absolute top-1 right-0 opacity-0 group-hover:opacity-100 flex gap-px z-10 transition-opacity"
+          style={{ background: "#fff", border: "1px solid #e5e5e5", padding: "2px" }}
+        >
+          <button
+            style={{ padding: "3px 5px", color: "#aaaaaa", lineHeight: 1 }}
+            className="hover:bg-gray-50 hover:text-gray-600 transition-colors"
+            onClick={(e) => duplicateBlock(block.id, e)}
+            title="Duplicate"
+          >
+            <Copy size={12} />
+          </button>
+          <button
+            style={{ padding: "3px 5px", color: "#aaaaaa", lineHeight: 1 }}
+            className="hover:bg-red-50 hover:text-red-500 transition-colors"
+            onClick={(e) => deleteBlock(block.id, e)}
+            title="Delete"
+          >
+            <Trash2 size={12} />
+          </button>
         </div>
 
-        {/* Add Block Above Button */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 z-10">
-          <button 
-            className="w-6 h-6 bg-white border border-blue-200 rounded-full flex items-center justify-center text-blue-500 shadow-sm hover:bg-blue-50"
+        {/* Add block above */}
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 z-20">
+          {showAddMenu && (
+            <BlockAddMenu
+              blockId={block.id}
+              onAdd={(id, type) => addBlockAbove(id, type)}
+              onClose={() => setShowAddMenu(false)}
+            />
+          )}
+          <button
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              border: "1px solid #93c5fd",
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#3b82f6",
+              cursor: "pointer",
+            }}
+            className="hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all"
             onClick={(e) => {
               e.stopPropagation();
-              addBlockAbove(block.id, "paragraph", e);
+              setShowAddMenu((v) => !v);
             }}
             title="Add block above"
           >
-            <Plus size={14} />
+            <Plus size={11} />
           </button>
         </div>
 
