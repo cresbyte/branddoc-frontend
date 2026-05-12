@@ -2,39 +2,18 @@
 
 import React, { useState } from "react";
 import {
-  LayoutDashboard,
-  Files,
-  LayoutTemplate,
   Palette,
   Receipt,
-  FileText,
+  FileCheck,
   BarChart3,
   Mail,
-  Building2,
-  User,
-  Plus,
-  Settings,
-  ChevronsUpDown,
-  Bell,
-  Search,
-  TrendingUp,
-  MoreVertical,
-  FileCheck,
-  FilePlus,
   Briefcase,
+  FilePlus,
   ChevronRight,
   Sparkles,
-  Shield,
-} from "lucide-react"
+} from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────────────── */
-interface NavItem {
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  id: string;
-}
-
 interface TemplateCard {
   icon: React.ReactNode;
   label: string;
@@ -52,25 +31,6 @@ interface DocRow {
 }
 
 /* ─── Data ─────────────────────────────────────────────────── */
-const NAV_WORKSPACE: NavItem[] = [
-  { icon: <LayoutDashboard size={15} />, label: "Dashboard", id: "dashboard" },
-  { icon: <Files size={15} />, label: "My Documents", count: 24, id: "docs" },
-  { icon: <LayoutTemplate size={15} />, label: "Templates", count: 80, id: "templates" },
-  { icon: <Palette size={15} />, label: "My Brand", id: "brand" },
-];
-
-const NAV_DOCS: NavItem[] = [
-  { icon: <Receipt size={15} />, label: "Invoices", count: 6, id: "invoices" },
-  { icon: <FileCheck size={15} />, label: "Quotations", count: 4, id: "quotations" },
-  { icon: <BarChart3 size={15} />, label: "Reports", count: 3, id: "reports" },
-  { icon: <Mail size={15} />, label: "Letters", count: 2, id: "letters" },
-];
-
-const NAV_COLLECTIONS: NavItem[] = [
-  { icon: <Building2 size={15} />, label: "Acme Corp", id: "acme" },
-  { icon: <User size={15} />, label: "Personal", id: "personal" },
-];
-
 const TEMPLATES: TemplateCard[] = [
   {
     icon: <Receipt size={18} />,
@@ -136,78 +96,19 @@ const TEMPLATE_COLORS: Record<string, { bg: string; icon: string; border: string
   neutral: { bg: "#F9FAFB", icon: "#6B7280", border: "#E5E7EB" },
 };
 
-const DOC_TYPE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  invoice:   { bg: "#ECFDF5", color: "#065F46", label: "Invoice" },
-  quotation: { bg: "#FFFBEB", color: "#78350F", label: "Quotation" },
-  letter:    { bg: "#EFF6FF", color: "#1E3A8A", label: "Letter" },
-  report:    { bg: "#F5F3FF", color: "#4C1D95", label: "Report" },
-  draft:     { bg: "#F3F4F6", color: "#374151", label: "Draft" },
-};
-
 const DOC_ICON_COLOR: Record<string, string> = {
   invoice: "#059669", quotation: "#D97706", letter: "#2563EB",
   report: "#7C3AED", draft: "#9CA3AF",
 };
 
 /* ─── Sub-components ────────────────────────────────────────── */
-function SidebarSection({ label }: { label: string }) {
-  return (
-    <div style={{
-      fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
-      textTransform: "uppercase", color: "#9CA3AF",
-      padding: "16px 16px 4px",
-    }}>
-      {label}
-    </div>
-  );
-}
-
-function NavLink({
-  item, active, onClick,
-}: { item: NavItem; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 9,
-        width: "100%", padding: "7px 10px", margin: "1px 8px",
-        width: "calc(100% - 16px)",
-        border: "none", borderRadius: 7, cursor: "pointer",
-        background: active ? "#EFF6FF" : "transparent",
-        color: active ? "#1D4ED8" : "#4B5563",
-        fontSize: 13.5, textAlign: "left",
-        transition: "background 0.12s, color 0.12s",
-        fontFamily: "inherit",
-      }}
-      onMouseEnter={(e) => {
-        if (!active) (e.currentTarget as HTMLElement).style.background = "#F9FAFB";
-      }}
-      onMouseLeave={(e) => {
-        if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
-      }}
-    >
-      <span style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }}>{item.icon}</span>
-      <span style={{ flex: 1, fontWeight: active ? 500 : 400 }}>{item.label}</span>
-      {item.count !== undefined && (
-        <span style={{
-          fontSize: 11, background: active ? "#DBEAFE" : "#F3F4F6",
-          color: active ? "#1D4ED8" : "#6B7280",
-          borderRadius: 10, padding: "1px 6px", fontWeight: 500,
-        }}>
-          {item.count}
-        </span>
-      )}
-    </button>
-  );
-}
-
 function StatCard({
   label, value, sub, subColor,
 }: { label: string; value: string; sub: string; subColor?: string }) {
   return (
     <div style={{
-      background: "#F9FAFB", borderRadius: 10, padding: "14px 16px",
-      border: "0.5px solid #F3F4F6",
+      background: "#FFFFFF", borderRadius: 10, padding: "14px 16px",
+      border: "0.5px solid #E5E7EB",
     }}>
       <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 5, fontWeight: 500 }}>
         {label}
@@ -264,641 +165,292 @@ function TemplateCardUI({ card }: { card: TemplateCard }) {
   );
 }
 
-/* ─── Main Dashboard ────────────────────────────────────────── */
-export default function Dashboard() {
-  const [activeNav, setActiveNav] = useState("dashboard");
-
+/* ─── Main Dashboard Page ───────────────────────────────────── */
+export default function DashboardPage() {
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        overflow: "hidden",
-        background: "#F9FAFB",
-        fontFamily: "'DM Sans', 'Geist', system-ui, sans-serif",
-      }}
-    >
-      {/* ── Sidebar ── */}
-      <aside
-        style={{
-          width: 232,
-          flexShrink: 0,
-          background: "#FFFFFF",
-          borderRight: "0.5px solid #E5E7EB",
-          display: "flex",
-          flexDirection: "column",
-          overflowY: "auto",
-        }}
-      >
-        {/* Logo */}
-        <div
+    <>
+      {/* Page heading */}
+      <div style={{ marginBottom: 24 }}>
+        <h1
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            padding: "18px 16px 14px",
-            borderBottom: "0.5px solid #F3F4F6",
+            fontSize: 20,
+            fontWeight: 600,
+            color: "#111827",
+            letterSpacing: "-0.02em",
+            marginBottom: 3,
           }}
         >
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <FileText size={15} color="#fff" />
-          </div>
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#111827",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            DocCraft
-          </span>
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              background: "#EFF6FF",
-              color: "#1D4ED8",
-              borderRadius: 4,
-              padding: "2px 5px",
-              marginLeft: 2,
-            }}
-          >
-            Beta
-          </span>
-        </div>
+          Good morning, Devrizal 👋
+        </h1>
+        <p style={{ fontSize: 13.5, color: "#6B7280" }}>
+          Here's what's happening with your documents today.
+        </p>
+      </div>
 
-        {/* Nav */}
-        <div style={{ flex: 1 }}>
-          <SidebarSection label="Workspace" />
-          {NAV_WORKSPACE.map((item) => (
-            <NavLink
-              key={item.id}
-              item={item}
-              active={activeNav === item.id}
-              onClick={() => setActiveNav(item.id)}
-            />
-          ))}
-
-          <SidebarSection label="Documents" />
-          {NAV_DOCS.map((item) => (
-            <NavLink
-              key={item.id}
-              item={item}
-              active={activeNav === item.id}
-              onClick={() => setActiveNav(item.id)}
-            />
-          ))}
-
-          <SidebarSection label="Collections" />
-          {NAV_COLLECTIONS.map((item) => (
-            <NavLink
-              key={item.id}
-              item={item}
-              active={activeNav === item.id}
-              onClick={() => setActiveNav(item.id)}
-            />
-          ))}
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 9,
-              width: "calc(100% - 16px)",
-              margin: "1px 8px",
-              padding: "7px 10px",
-              border: "none",
-              borderRadius: 7,
-              background: "transparent",
-              cursor: "pointer",
-              color: "#2563EB",
-              fontSize: 13.5,
-              fontFamily: "inherit",
-            }}
-          >
-            <Plus size={15} />
-            <span>New collection</span>
-          </button>
-        </div>
-
-        {/* User */}
-        <div
-          style={{ padding: "8px 8px 12px", borderTop: "0.5px solid #F3F4F6" }}
-        >
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              width: "100%",
-              padding: "8px 10px",
-              border: "none",
-              borderRadius: 8,
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              transition: "background 0.12s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
-          >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                background: "#1D4ED8",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontSize: 11,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              DM
-            </div>
-            <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "#111827",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Devrizal M.
-              </div>
-              <div style={{ fontSize: 11, color: "#9CA3AF" }}>Free plan</div>
-            </div>
-            <ChevronsUpDown size={14} color="#9CA3AF" />
-          </button>
-        </div>
-      </aside>
-
-      {/* ── Main ── */}
+      {/* Stats row */}
       <div
         style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 12,
+          marginBottom: 24,
         }}
       >
-        {/* Topbar */}
+        <StatCard
+          label="Total documents"
+          value="24"
+          sub="↑ 4 this month"
+          subColor="#059669"
+        />
+        <StatCard
+          label="Templates used"
+          value="11"
+          sub="Across 3 categories"
+        />
+        <StatCard
+          label="Brand kit"
+          value="Acme Corp"
+          sub="Applied to 18 documents"
+          subColor="#2563EB"
+        />
+      </div>
+
+      {/* Brand banner */}
+      <div
+        style={{
+          background: "#FFFFFF",
+          border: "0.5px solid #E5E7EB",
+          borderRadius: 12,
+          padding: "18px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 28,
+        }}
+      >
         <div
           style={{
-            height: 52,
-            background: "#FFFFFF",
-            borderBottom: "0.5px solid #E5E7EB",
+            width: 42,
+            height: 42,
+            borderRadius: 10,
+            background: "#EFF6FF",
+            border: "0.5px solid #BFDBFE",
             display: "flex",
             alignItems: "center",
-            padding: "0 24px",
-            gap: 12,
+            justifyContent: "center",
+            color: "#1D4ED8",
             flexShrink: 0,
           }}
         >
-          <div style={{ position: "relative", flex: 1, maxWidth: 380 }}>
-            <Search
-              size={14}
-              style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#9CA3AF",
-              }}
-            />
-            <input
-              placeholder="Search documents, templates…"
-              style={{
-                width: "100%",
-                height: 34,
-                paddingLeft: 32,
-                paddingRight: 12,
-                border: "0.5px solid #E5E7EB",
-                borderRadius: 8,
-                fontSize: 13.5,
-                background: "#F9FAFB",
-                color: "#111827",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-            />
-          </div>
+          <Palette size={20} />
+        </div>
+        <div style={{ flex: 1 }}>
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginLeft: "auto",
+              fontSize: 14,
+              fontWeight: 500,
+              color: "#111827",
+              marginBottom: 2,
             }}
           >
-            <button
-              style={{
-                width: 34,
-                height: 34,
-                border: "0.5px solid #E5E7EB",
-                borderRadius: 8,
-                background: "#fff",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#6B7280",
-              }}
-            >
-              <Bell size={15} />
-            </button>
-            <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                height: 34,
-                padding: "0 14px",
-                background: "#1D4ED8",
-                border: "none",
-                borderRadius: 8,
-                cursor: "pointer",
-                color: "#fff",
-                fontSize: 13.5,
-                fontWeight: 500,
-                fontFamily: "inherit",
-              }}
-            >
-              <Plus size={14} />
-              New document
-            </button>
+            Your brand kit is active
+          </div>
+          <div style={{ fontSize: 13, color: "#6B7280" }}>
+            New documents automatically use your Acme Corp letterhead and
+            footer.
           </div>
         </div>
-
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 48px" }}>
-          {/* Page heading */}
-          <div style={{ marginBottom: 24 }}>
-            <h1
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: "#111827",
-                letterSpacing: "-0.02em",
-                marginBottom: 3,
-              }}
-            >
-              Good morning, Devrizal 👋
-            </h1>
-            <p style={{ fontSize: 13.5, color: "#6B7280" }}>
-              Here's what's happening with your documents today.
-            </p>
-          </div>
-
-          {/* Stats row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "7px 12px",
+            borderRadius: 8,
+            background: "#F9FAFB",
+            border: "0.5px solid #E5E7EB",
+            flexShrink: 0,
+          }}
+        >
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 12,
-              marginBottom: 24,
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "#1D4ED8",
             }}
-          >
-            <StatCard
-              label="Total documents"
-              value="24"
-              sub="↑ 4 this month"
-              subColor="#059669"
-            />
-            <StatCard
-              label="Templates used"
-              value="11"
-              sub="Across 3 categories"
-            />
-            <StatCard
-              label="Brand kit"
-              value="Acme Corp"
-              sub="Applied to 18 documents"
-              subColor="#2563EB"
-            />
-          </div>
-
-          {/* Brand banner */}
-          <div
-            style={{
-              background: "#FFFFFF",
-              border: "0.5px solid #E5E7EB",
-              borderRadius: 12,
-              padding: "18px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              marginBottom: 28,
-            }}
-          >
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 10,
-                background: "#EFF6FF",
-                border: "0.5px solid #BFDBFE",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#1D4ED8",
-                flexShrink: 0,
-              }}
-            >
-              <Palette size={20} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "#111827",
-                  marginBottom: 2,
-                }}
-              >
-                Your brand kit is active
-              </div>
-              <div style={{ fontSize: 13, color: "#6B7280" }}>
-                New documents automatically use your Acme Corp letterhead and
-                footer.
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "7px 12px",
-                borderRadius: 8,
-                background: "#F9FAFB",
-                border: "0.5px solid #E5E7EB",
-                flexShrink: 0,
-              }}
-            >
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "#1D4ED8",
-                }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
-                Acme Corp
-              </span>
-            </div>
-            <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "7px 13px",
-                border: "0.5px solid #E5E7EB",
-                borderRadius: 8,
-                background: "#fff",
-                cursor: "pointer",
-                fontSize: 13,
-                color: "#374151",
-                fontFamily: "inherit",
-                flexShrink: 0,
-              }}
-            >
-              Edit brand
-              <ChevronRight size={13} />
-            </button>
-          </div>
-
-          {/* Upgrade nudge */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 16px",
-              borderRadius: 10,
-              background: "#FFFBEB",
-              border: "0.5px solid #FDE68A",
-              marginBottom: 28,
-            }}
-          >
-            <Sparkles size={15} color="#D97706" />
-            <span style={{ fontSize: 13, color: "#78350F", flex: 1 }}>
-              Unlock unlimited templates and custom brand colors with DocCraft
-              Pro.
-            </span>
-            <button
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#B45309",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                textDecoration: "underline",
-              }}
-            >
-              Try Pro free →
-            </button>
-          </div>
-
-          {/* Templates */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
-              Start from a template
-            </h2>
-            <button
-              style={{
-                fontSize: 13,
-                color: "#2563EB",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              See all templates →
-            </button>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(6, 1fr)",
-              gap: 10,
-              marginBottom: 32,
-            }}
-          >
-            {TEMPLATES.map((card) => (
-              <TemplateCardUI key={card.id} card={card} />
-            ))}
-          </div>
-
-          {/* Recent docs */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
-              Recent documents
-            </h2>
-            <button
-              style={{
-                fontSize: 13,
-                color: "#2563EB",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              See all →
-            </button>
-          </div>
-          <div
-            style={{
-              background: "#FFFFFF",
-              border: "0.5px solid #E5E7EB",
-              borderRadius: 12,
-              overflow: "hidden",
-            }}
-          >
-            {/* Table header */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 140px 110px 44px",
-                padding: "8px 16px",
-                borderBottom: "0.5px solid #F3F4F6",
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                color: "#9CA3AF",
-              }}
-            >
-              <span>File name</span>
-              <span>Date</span>
-              <span>Type</span>
-              <span />
-            </div>
-
-            {DOCS.map((doc, i) => {
-              const ts = DOC_TYPE_STYLES[doc.type]
-              const ic = DOC_ICON_COLOR[doc.type]
-              return (
-                <div
-                  key={doc.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 140px 110px 44px",
-                    alignItems: "center",
-                    padding: "10px 16px",
-                    borderTop: i > 0 ? "0.5px solid #F9FAFB" : undefined,
-                    cursor: "pointer",
-                    transition: "background 0.1s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#F9FAFB")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 9 }}
-                  >
-                    <FileText size={15} color={ic} style={{ flexShrink: 0 }} />
-                    <span
-                      style={{
-                        fontSize: 13.5,
-                        color: "#111827",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {doc.name}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 13, color: "#6B7280" }}>
-                    {doc.date}
-                  </span>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      fontSize: 11.5,
-                      fontWeight: 500,
-                      padding: "3px 9px",
-                      borderRadius: 5,
-                      background: ts.bg,
-                      color: ts.color,
-                      width: "fit-content",
-                    }}
-                  >
-                    {ts.label}
-                  </span>
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#9CA3AF",
-                        padding: 4,
-                        borderRadius: 5,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#F3F4F6"
-                        e.currentTarget.style.color = "#374151"
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "none"
-                        e.currentTarget.style.color = "#9CA3AF"
-                      }}
-                    >
-                      <MoreVertical size={15} />
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          />
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
+            Acme Corp
+          </span>
         </div>
+        <button
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "7px 13px",
+            border: "0.5px solid #E5E7EB",
+            borderRadius: 8,
+            background: "#fff",
+            cursor: "pointer",
+            fontSize: 13,
+            color: "#374151",
+            fontFamily: "inherit",
+            flexShrink: 0,
+          }}
+        >
+          Edit brand
+          <ChevronRight size={13} />
+        </button>
       </div>
-    </div>
-  )
+
+      {/* Upgrade nudge */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 16px",
+          borderRadius: 10,
+          background: "#FFFBEB",
+          border: "0.5px solid #FDE68A",
+          marginBottom: 28,
+        }}
+      >
+        <Sparkles size={15} color="#D97706" />
+        <span style={{ fontSize: 13, color: "#78350F", flex: 1 }}>
+          Unlock unlimited templates and custom brand colors with DocCraft
+          Pro.
+        </span>
+        <button
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: "#B45309",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            textDecoration: "underline",
+          }}
+        >
+          Try Pro free →
+        </button>
+      </div>
+
+      {/* Templates */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+          Start from a template
+        </h2>
+        <button
+          style={{
+            fontSize: 13,
+            color: "#2563EB",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          See all templates →
+        </button>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(6, 1fr)",
+          gap: 10,
+          marginBottom: 32,
+        }}
+      >
+        {TEMPLATES.map((card) => (
+          <TemplateCardUI key={card.id} card={card} />
+        ))}
+      </div>
+
+      {/* Recent docs */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+          Recent documents
+        </h2>
+        <button
+          style={{
+            fontSize: 13,
+            color: "#2563EB",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          See all →
+        </button>
+      </div>
+      <div
+        style={{
+          background: "#FFFFFF",
+          border: "0.5px solid #E5E7EB",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        {DOCS.map((doc, idx) => (
+          <div
+            key={doc.id}
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              borderBottom: idx === DOCS.length - 1 ? "none" : "0.5px solid #F3F4F6",
+              cursor: "pointer",
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: 7, 
+              background: `${DOC_ICON_COLOR[doc.type]}10`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: DOC_ICON_COLOR[doc.type],
+            }}>
+              {doc.type === "invoice" && <Receipt size={15} />}
+              {doc.type === "quotation" && <FileCheck size={15} />}
+              {doc.type === "letter" && <Mail size={15} />}
+              {doc.type === "report" && <BarChart3 size={15} />}
+              {doc.type === "draft" && <FilePlus size={15} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 500, color: "#111827", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                {doc.name}
+              </div>
+              <div style={{ fontSize: 11.5, color: "#9CA3AF", marginTop: 1 }}>
+                {doc.type.charAt(0).toUpperCase() + doc.type.slice(1)} • {doc.date}
+              </div>
+            </div>
+            <div style={{ padding: "4px 8px", borderRadius: 6, border: "0.5px solid #E5E7EB", fontSize: 11.5, fontWeight: 500, color: "#6B7280" }}>
+              View
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
