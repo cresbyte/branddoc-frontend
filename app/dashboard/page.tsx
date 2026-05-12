@@ -1,328 +1,904 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import React, { useState } from "react";
 import {
-  FileText,
-  Mail,
+  LayoutDashboard,
+  Files,
+  LayoutTemplate,
+  Palette,
   Receipt,
-  File,
-  Download,
-  Pencil,
-  ArrowRight,
-  LogOut,
+  FileText,
+  BarChart3,
+  Mail,
+  Building2,
+  User,
+  Plus,
   Settings,
-  HelpCircle,
+  ChevronsUpDown,
+  Bell,
+  Search,
+  TrendingUp,
+  MoreVertical,
+  FileCheck,
+  FilePlus,
+  Briefcase,
+  ChevronRight,
+  Sparkles,
+  Shield,
 } from "lucide-react"
-import { TemplatePreview } from "@/components/template-preview"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 
-const sampleBrand = {
-  companyName: "Acme Studio",
-  tagline: "Quality you can trust",
-  email: "hello@acme.com",
-  phone: "+1 234 567 8900",
-  website: "https://acme.com",
-  address: "123 Creative Lane, New York, USA",
-  primaryColor: "#1a1a1a",
-  secondaryColor: "#4f46e5",
-  font: "Poppins",
-  industry: "Freelancer / Creative",
-  initials: "AS",
+/* ─── Types ────────────────────────────────────────────────── */
+interface NavItem {
+  icon: React.ReactNode;
+  label: string;
+  count?: number;
+  id: string;
 }
 
-const recentDocuments = [
-  { id: "INV-2026-001", type: "Invoice", created: "Apr 28, 2026", status: "Downloaded" },
-  { id: "INV-2026-002", type: "Invoice", created: "Apr 25, 2026", status: "Downloaded" },
-  { id: "LTR-2026-001", type: "Letterhead", created: "Apr 20, 2026", status: "Downloaded" },
-]
+interface TemplateCard {
+  icon: React.ReactNode;
+  label: string;
+  styles: number;
+  color: string;
+  badge?: "popular" | "new";
+  id: string;
+}
 
-const documentTypes = [
+interface DocRow {
+  name: string;
+  date: string;
+  type: "invoice" | "quotation" | "letter" | "report" | "draft";
+  id: string;
+}
+
+/* ─── Data ─────────────────────────────────────────────────── */
+const NAV_WORKSPACE: NavItem[] = [
+  { icon: <LayoutDashboard size={15} />, label: "Dashboard", id: "dashboard" },
+  { icon: <Files size={15} />, label: "My Documents", count: 24, id: "docs" },
+  { icon: <LayoutTemplate size={15} />, label: "Templates", count: 80, id: "templates" },
+  { icon: <Palette size={15} />, label: "My Brand", id: "brand" },
+];
+
+const NAV_DOCS: NavItem[] = [
+  { icon: <Receipt size={15} />, label: "Invoices", count: 6, id: "invoices" },
+  { icon: <FileCheck size={15} />, label: "Quotations", count: 4, id: "quotations" },
+  { icon: <BarChart3 size={15} />, label: "Reports", count: 3, id: "reports" },
+  { icon: <Mail size={15} />, label: "Letters", count: 2, id: "letters" },
+];
+
+const NAV_COLLECTIONS: NavItem[] = [
+  { icon: <Building2 size={15} />, label: "Acme Corp", id: "acme" },
+  { icon: <User size={15} />, label: "Personal", id: "personal" },
+];
+
+const TEMPLATES: TemplateCard[] = [
   {
+    icon: <Receipt size={18} />,
+    label: "Invoice",
+    styles: 6,
+    color: "blue",
+    badge: "popular",
     id: "invoice",
-    name: "Invoice",
-    description: "Professional invoices with your branding",
-    icon: FileText,
-    href: "/create/invoice",
-    price: "$4.99",
   },
   {
-    id: "letterhead",
-    name: "Letterhead",
-    description: "Branded letterhead for formal correspondence",
-    icon: File,
-    href: "/create/letterhead",
-    price: "$4.99",
+    icon: <FileCheck size={18} />,
+    label: "Quotation",
+    styles: 4,
+    color: "amber",
+    id: "quotation",
   },
   {
-    id: "receipt",
-    name: "Receipt",
-    description: "Clean receipts for every transaction",
-    icon: Receipt,
-    href: "/create/receipt",
-    price: "$4.99",
+    icon: <Mail size={18} />,
+    label: "Business letter",
+    styles: 5,
+    color: "teal",
+    id: "letter",
   },
   {
-    id: "email-signature",
-    name: "Email Signature",
-    description: "HTML email signature ready to copy",
-    icon: Mail,
-    href: "/create/email-signature",
-    price: "$4.99",
+    icon: <BarChart3 size={18} />,
+    label: "Report",
+    styles: 3,
+    color: "purple",
+    badge: "new",
+    id: "report",
   },
-]
+  {
+    icon: <Briefcase size={18} />,
+    label: "Proposal",
+    styles: 4,
+    color: "coral",
+    id: "proposal",
+  },
+  {
+    icon: <FilePlus size={18} />,
+    label: "Blank doc",
+    styles: 0,
+    color: "neutral",
+    id: "blank",
+  },
+];
 
-export default function BranddocDashboardPage() {
-  const router = useRouter()
+const DOCS: DocRow[] = [
+  { name: "Invoice_1241B_Balance_Shipping", date: "Today, 2:14 pm", type: "invoice", id: "d1" },
+  { name: "Quotation_WebDesign_Client03", date: "Yesterday", type: "quotation", id: "d2" },
+  { name: "Cover_Letter_TechRole", date: "2 days ago", type: "letter", id: "d3" },
+  { name: "Q3_Performance_Report_2024", date: "4 days ago", type: "report", id: "d4" },
+  { name: "Draft_Partnership_Proposal", date: "1 week ago", type: "draft", id: "d5" },
+];
+
+/* ─── Style helpers ─────────────────────────────────────────── */
+const TEMPLATE_COLORS: Record<string, { bg: string; icon: string; border: string }> = {
+  blue:    { bg: "#EFF6FF", icon: "#1D4ED8", border: "#BFDBFE" },
+  amber:   { bg: "#FFFBEB", icon: "#B45309", border: "#FDE68A" },
+  teal:    { bg: "#F0FDFA", icon: "#0F766E", border: "#99F6E4" },
+  purple:  { bg: "#F5F3FF", icon: "#6D28D9", border: "#DDD6FE" },
+  coral:   { bg: "#FFF7ED", icon: "#C2410C", border: "#FED7AA" },
+  neutral: { bg: "#F9FAFB", icon: "#6B7280", border: "#E5E7EB" },
+};
+
+const DOC_TYPE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  invoice:   { bg: "#ECFDF5", color: "#065F46", label: "Invoice" },
+  quotation: { bg: "#FFFBEB", color: "#78350F", label: "Quotation" },
+  letter:    { bg: "#EFF6FF", color: "#1E3A8A", label: "Letter" },
+  report:    { bg: "#F5F3FF", color: "#4C1D95", label: "Report" },
+  draft:     { bg: "#F3F4F6", color: "#374151", label: "Draft" },
+};
+
+const DOC_ICON_COLOR: Record<string, string> = {
+  invoice: "#059669", quotation: "#D97706", letter: "#2563EB",
+  report: "#7C3AED", draft: "#9CA3AF",
+};
+
+/* ─── Sub-components ────────────────────────────────────────── */
+function SidebarSection({ label }: { label: string }) {
+  return (
+    <div style={{
+      fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
+      textTransform: "uppercase", color: "#9CA3AF",
+      padding: "16px 16px 4px",
+    }}>
+      {label}
+    </div>
+  );
+}
+
+function NavLink({
+  item, active, onClick,
+}: { item: NavItem; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 9,
+        width: "100%", padding: "7px 10px", margin: "1px 8px",
+        width: "calc(100% - 16px)",
+        border: "none", borderRadius: 7, cursor: "pointer",
+        background: active ? "#EFF6FF" : "transparent",
+        color: active ? "#1D4ED8" : "#4B5563",
+        fontSize: 13.5, textAlign: "left",
+        transition: "background 0.12s, color 0.12s",
+        fontFamily: "inherit",
+      }}
+      onMouseEnter={(e) => {
+        if (!active) (e.currentTarget as HTMLElement).style.background = "#F9FAFB";
+      }}
+      onMouseLeave={(e) => {
+        if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
+      }}
+    >
+      <span style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }}>{item.icon}</span>
+      <span style={{ flex: 1, fontWeight: active ? 500 : 400 }}>{item.label}</span>
+      {item.count !== undefined && (
+        <span style={{
+          fontSize: 11, background: active ? "#DBEAFE" : "#F3F4F6",
+          color: active ? "#1D4ED8" : "#6B7280",
+          borderRadius: 10, padding: "1px 6px", fontWeight: 500,
+        }}>
+          {item.count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function StatCard({
+  label, value, sub, subColor,
+}: { label: string; value: string; sub: string; subColor?: string }) {
+  return (
+    <div style={{
+      background: "#F9FAFB", borderRadius: 10, padding: "14px 16px",
+      border: "0.5px solid #F3F4F6",
+    }}>
+      <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 5, fontWeight: 500 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 600, color: "#111827", letterSpacing: "-0.02em" }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 12, color: subColor || "#6B7280", marginTop: 3 }}>{sub}</div>
+    </div>
+  );
+}
+
+function TemplateCardUI({ card }: { card: TemplateCard }) {
+  const [hovered, setHovered] = useState(false);
+  const c = TEMPLATE_COLORS[card.color];
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "#FFFFFF",
+        border: `0.5px solid ${hovered ? c.border : "#E5E7EB"}`,
+        borderRadius: 12, padding: "16px 14px", cursor: "pointer",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+        boxShadow: hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "none",
+      }}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: 9, background: c.bg,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 12, color: c.icon,
+        border: `0.5px solid ${c.border}`,
+      }}>
+        {card.icon}
+      </div>
+      <div style={{ fontSize: 13.5, fontWeight: 500, color: "#111827", marginBottom: 2 }}>
+        {card.label}
+      </div>
+      <div style={{ fontSize: 12, color: "#9CA3AF" }}>
+        {card.styles > 0 ? `${card.styles} styles` : "Start fresh"}
+      </div>
+      {card.badge && (
+        <div style={{
+          display: "inline-block", marginTop: 8, fontSize: 10, fontWeight: 600,
+          padding: "2px 7px", borderRadius: 4,
+          background: card.badge === "popular" ? "#ECFDF5" : "#EFF6FF",
+          color: card.badge === "popular" ? "#065F46" : "#1D4ED8",
+          letterSpacing: "0.04em", textTransform: "uppercase",
+        }}>
+          {card.badge === "popular" ? "Popular" : "New"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main Dashboard ────────────────────────────────────────── */
+export default function Dashboard() {
+  const [activeNav, setActiveNav] = useState("dashboard");
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col">
-      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-10 space-y-10">
-
-        {/* ── Welcome + user ── */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-medium text-[#1a1a1a]">Good morning, Jane.</h1>
-            <p className="text-gray-500 mt-1">Your brand is saved. Pick a document to create.</p>
-          </div>
-          <Avatar className="h-9 w-9 mt-1 flex-shrink-0">
-            <AvatarFallback className="bg-[#1a1a1a] text-white text-xs font-medium">JD</AvatarFallback>
-          </Avatar>
-        </div>
-
-        {/* ── Brand profile card ── */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-5">
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#F9FAFB",
+        fontFamily: "'DM Sans', 'Geist', system-ui, sans-serif",
+      }}
+    >
+      {/* ── Sidebar ── */}
+      <aside
+        style={{
+          width: 232,
+          flexShrink: 0,
+          background: "#FFFFFF",
+          borderRight: "0.5px solid #E5E7EB",
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
+        }}
+      >
+        {/* Logo */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+            padding: "18px 16px 14px",
+            borderBottom: "0.5px solid #F3F4F6",
+          }}
+        >
           <div
-            className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-            style={{ backgroundColor: sampleBrand.primaryColor }}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
           >
-            {sampleBrand.initials}
+            <FileText size={15} color="#fff" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-[#1a1a1a]">{sampleBrand.companyName}</p>
-            <div className="flex items-center gap-3 mt-1.5">
-              <div className="flex items-center gap-1.5">
-                <div
-                  className="h-3.5 w-3.5 rounded-sm border border-gray-200"
-                  style={{ backgroundColor: sampleBrand.primaryColor }}
-                />
-                <div
-                  className="h-3.5 w-3.5 rounded-sm border border-gray-200"
-                  style={{ backgroundColor: sampleBrand.secondaryColor }}
-                />
-              </div>
-              <span className="text-xs text-gray-400">·</span>
-              <span className="text-xs text-gray-500">{sampleBrand.font}</span>
-              <span className="text-xs text-gray-400">·</span>
-              <span className="text-xs text-gray-500">{sampleBrand.industry}</span>
-            </div>
-          </div>
-          <Link href="/dashboard/brand">
-            <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-[#1a1a1a] gap-1 flex-shrink-0">
-              <Pencil className="h-3 w-3" />
-              Edit brand
-            </Button>
-          </Link>
+          <span
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#111827",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            DocCraft
+          </span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              background: "#EFF6FF",
+              color: "#1D4ED8",
+              borderRadius: 4,
+              padding: "2px 5px",
+              marginLeft: 2,
+            }}
+          >
+            Beta
+          </span>
         </div>
 
-        {/* ── Document type grid ── */}
-        <div>
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-4">Create a document</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {documentTypes.map((doc) => {
-              const Icon = doc.icon
+        {/* Nav */}
+        <div style={{ flex: 1 }}>
+          <SidebarSection label="Workspace" />
+          {NAV_WORKSPACE.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={activeNav === item.id}
+              onClick={() => setActiveNav(item.id)}
+            />
+          ))}
+
+          <SidebarSection label="Documents" />
+          {NAV_DOCS.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={activeNav === item.id}
+              onClick={() => setActiveNav(item.id)}
+            />
+          ))}
+
+          <SidebarSection label="Collections" />
+          {NAV_COLLECTIONS.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={activeNav === item.id}
+              onClick={() => setActiveNav(item.id)}
+            />
+          ))}
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              width: "calc(100% - 16px)",
+              margin: "1px 8px",
+              padding: "7px 10px",
+              border: "none",
+              borderRadius: 7,
+              background: "transparent",
+              cursor: "pointer",
+              color: "#2563EB",
+              fontSize: 13.5,
+              fontFamily: "inherit",
+            }}
+          >
+            <Plus size={15} />
+            <span>New collection</span>
+          </button>
+        </div>
+
+        {/* User */}
+        <div
+          style={{ padding: "8px 8px 12px", borderTop: "0.5px solid #F3F4F6" }}
+        >
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              padding: "8px 10px",
+              border: "none",
+              borderRadius: 8,
+              background: "transparent",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "background 0.12s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                background: "#1D4ED8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              DM
+            </div>
+            <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "#111827",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Devrizal M.
+              </div>
+              <div style={{ fontSize: 11, color: "#9CA3AF" }}>Free plan</div>
+            </div>
+            <ChevronsUpDown size={14} color="#9CA3AF" />
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main ── */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Topbar */}
+        <div
+          style={{
+            height: 52,
+            background: "#FFFFFF",
+            borderBottom: "0.5px solid #E5E7EB",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 24px",
+            gap: 12,
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ position: "relative", flex: 1, maxWidth: 380 }}>
+            <Search
+              size={14}
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#9CA3AF",
+              }}
+            />
+            <input
+              placeholder="Search documents, templates…"
+              style={{
+                width: "100%",
+                height: 34,
+                paddingLeft: 32,
+                paddingRight: 12,
+                border: "0.5px solid #E5E7EB",
+                borderRadius: 8,
+                fontSize: 13.5,
+                background: "#F9FAFB",
+                color: "#111827",
+                outline: "none",
+                fontFamily: "inherit",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginLeft: "auto",
+            }}
+          >
+            <button
+              style={{
+                width: 34,
+                height: 34,
+                border: "0.5px solid #E5E7EB",
+                borderRadius: 8,
+                background: "#fff",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#6B7280",
+              }}
+            >
+              <Bell size={15} />
+            </button>
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                height: 34,
+                padding: "0 14px",
+                background: "#1D4ED8",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+                color: "#fff",
+                fontSize: 13.5,
+                fontWeight: 500,
+                fontFamily: "inherit",
+              }}
+            >
+              <Plus size={14} />
+              New document
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 48px" }}>
+          {/* Page heading */}
+          <div style={{ marginBottom: 24 }}>
+            <h1
+              style={{
+                fontSize: 20,
+                fontWeight: 600,
+                color: "#111827",
+                letterSpacing: "-0.02em",
+                marginBottom: 3,
+              }}
+            >
+              Good morning, Devrizal 👋
+            </h1>
+            <p style={{ fontSize: 13.5, color: "#6B7280" }}>
+              Here's what's happening with your documents today.
+            </p>
+          </div>
+
+          {/* Stats row */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 12,
+              marginBottom: 24,
+            }}
+          >
+            <StatCard
+              label="Total documents"
+              value="24"
+              sub="↑ 4 this month"
+              subColor="#059669"
+            />
+            <StatCard
+              label="Templates used"
+              value="11"
+              sub="Across 3 categories"
+            />
+            <StatCard
+              label="Brand kit"
+              value="Acme Corp"
+              sub="Applied to 18 documents"
+              subColor="#2563EB"
+            />
+          </div>
+
+          {/* Brand banner */}
+          <div
+            style={{
+              background: "#FFFFFF",
+              border: "0.5px solid #E5E7EB",
+              borderRadius: 12,
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              marginBottom: 28,
+            }}
+          >
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 10,
+                background: "#EFF6FF",
+                border: "0.5px solid #BFDBFE",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#1D4ED8",
+                flexShrink: 0,
+              }}
+            >
+              <Palette size={20} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "#111827",
+                  marginBottom: 2,
+                }}
+              >
+                Your brand kit is active
+              </div>
+              <div style={{ fontSize: 13, color: "#6B7280" }}>
+                New documents automatically use your Acme Corp letterhead and
+                footer.
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 12px",
+                borderRadius: 8,
+                background: "#F9FAFB",
+                border: "0.5px solid #E5E7EB",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: "#1D4ED8",
+                }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
+                Acme Corp
+              </span>
+            </div>
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "7px 13px",
+                border: "0.5px solid #E5E7EB",
+                borderRadius: 8,
+                background: "#fff",
+                cursor: "pointer",
+                fontSize: 13,
+                color: "#374151",
+                fontFamily: "inherit",
+                flexShrink: 0,
+              }}
+            >
+              Edit brand
+              <ChevronRight size={13} />
+            </button>
+          </div>
+
+          {/* Upgrade nudge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 16px",
+              borderRadius: 10,
+              background: "#FFFBEB",
+              border: "0.5px solid #FDE68A",
+              marginBottom: 28,
+            }}
+          >
+            <Sparkles size={15} color="#D97706" />
+            <span style={{ fontSize: 13, color: "#78350F", flex: 1 }}>
+              Unlock unlimited templates and custom brand colors with DocCraft
+              Pro.
+            </span>
+            <button
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#B45309",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textDecoration: "underline",
+              }}
+            >
+              Try Pro free →
+            </button>
+          </div>
+
+          {/* Templates */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+              Start from a template
+            </h2>
+            <button
+              style={{
+                fontSize: 13,
+                color: "#2563EB",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              See all templates →
+            </button>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(6, 1fr)",
+              gap: 10,
+              marginBottom: 32,
+            }}
+          >
+            {TEMPLATES.map((card) => (
+              <TemplateCardUI key={card.id} card={card} />
+            ))}
+          </div>
+
+          {/* Recent docs */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+              Recent documents
+            </h2>
+            <button
+              style={{
+                fontSize: 13,
+                color: "#2563EB",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              See all →
+            </button>
+          </div>
+          <div
+            style={{
+              background: "#FFFFFF",
+              border: "0.5px solid #E5E7EB",
+              borderRadius: 12,
+              overflow: "hidden",
+            }}
+          >
+            {/* Table header */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 140px 110px 44px",
+                padding: "8px 16px",
+                borderBottom: "0.5px solid #F3F4F6",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: "#9CA3AF",
+              }}
+            >
+              <span>File name</span>
+              <span>Date</span>
+              <span>Type</span>
+              <span />
+            </div>
+
+            {DOCS.map((doc, i) => {
+              const ts = DOC_TYPE_STYLES[doc.type]
+              const ic = DOC_ICON_COLOR[doc.type]
               return (
-                <Card
+                <div
                   key={doc.id}
-                  className="border border-gray-200 hover:border-gray-400 hover:shadow-sm transition-all duration-150 cursor-pointer group bg-white"
-                  onClick={() => router.push(doc.href)}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 140px 110px 44px",
+                    alignItems: "center",
+                    padding: "10px 16px",
+                    borderTop: i > 0 ? "0.5px solid #F9FAFB" : undefined,
+                    cursor: "pointer",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F9FAFB")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
-                  <CardContent className="p-5 flex flex-col gap-4">
-                    <div className="flex items-start justify-between">
-                      <div className="p-2.5 rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors duration-150">
-                        <Icon className="h-5 w-5 text-[#1a1a1a]" />
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-xs font-medium text-gray-500 border-gray-200"
-                      >
-                        {doc.price}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="font-medium text-[#1a1a1a] text-sm">{doc.name}</p>
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{doc.description}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white text-xs mt-auto"
-                      onClick={(e) => { e.stopPropagation(); router.push(doc.href) }}
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 9 }}
+                  >
+                    <FileText size={15} color={ic} style={{ flexShrink: 0 }} />
+                    <span
+                      style={{
+                        fontSize: 13.5,
+                        color: "#111827",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
                     >
-                      Create
-                    </Button>
-                  </CardContent>
-                </Card>
+                      {doc.name}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 13, color: "#6B7280" }}>
+                    {doc.date}
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      fontSize: 11.5,
+                      fontWeight: 500,
+                      padding: "3px 9px",
+                      borderRadius: 5,
+                      background: ts.bg,
+                      color: ts.color,
+                      width: "fit-content",
+                    }}
+                  >
+                    {ts.label}
+                  </span>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <button
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#9CA3AF",
+                        padding: 4,
+                        borderRadius: 5,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#F3F4F6"
+                        e.currentTarget.style.color = "#374151"
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "none"
+                        e.currentTarget.style.color = "#9CA3AF"
+                      }}
+                    >
+                      <MoreVertical size={15} />
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
-
-        {/* ── Recent documents ── */}
-        <div>
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-4">Recent documents</h2>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-4 px-5 py-3 bg-gray-50 border-b border-gray-100">
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Document</span>
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Type</span>
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Created</span>
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Action</span>
-            </div>
-            {recentDocuments.map((doc, i) => (
-              <div key={doc.id}>
-                <div className="grid grid-cols-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors duration-150">
-                  <span className="text-sm font-medium text-[#1a1a1a]">{doc.id}</span>
-                  <span className="text-sm text-gray-600">{doc.type}</span>
-                  <span className="text-sm text-gray-500">{doc.created}</span>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="success" className="text-xs">
-                      {doc.status}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-gray-500 hover:text-[#1a1a1a] gap-1"
-                    >
-                      <Download className="h-3 w-3" />
-                      Re-download
-                    </Button>
-                  </div>
-                </div>
-                {i < recentDocuments.length - 1 && (
-                  <Separator className="mx-5 w-auto" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Document templates section ── */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-widest">Document templates</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Blank branded templates for Word, Google Docs, Excel, and Sheets</p>
-            </div>
-            <Link href="/templates">
-              <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-[#1a1a1a] gap-1">
-                Browse all
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-            {/* Template card 1: Executive */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-400 hover:shadow-sm transition-all duration-150 flex-shrink-0 w-[200px]">
-              <div className="w-full overflow-hidden bg-[#f8f8f8] border-b border-gray-100" style={{ height: 120 }}>
-                <TemplatePreview templateId="lh-001" brand={sampleBrand} size="card" />
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#1a1a1a]">Executive</p>
-                  <span className="text-xs text-gray-500">$4.99</span>
-                </div>
-                <Link href="/templates/lh-001">
-                  <Button variant="outline" size="sm" className="w-full h-6 text-[10px] border-gray-200">Preview</Button>
-                </Link>
-              </div>
-            </div>
-            {/* Template card 2: Minimal Line */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-400 hover:shadow-sm transition-all duration-150 flex-shrink-0 w-[200px]">
-              <div className="w-full overflow-hidden bg-[#f8f8f8] border-b border-gray-100" style={{ height: 120 }}>
-                <TemplatePreview templateId="lh-002" brand={sampleBrand} size="card" />
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#1a1a1a]">Minimal Line</p>
-                  <span className="text-xs text-gray-500">$4.99</span>
-                </div>
-                <Link href="/templates/lh-002">
-                  <Button variant="outline" size="sm" className="w-full h-6 text-[10px] border-gray-200">Preview</Button>
-                </Link>
-              </div>
-            </div>
-            {/* Template card 3: Invoice Sheet */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-400 hover:shadow-sm transition-all duration-150 flex-shrink-0 w-[200px]">
-              <div className="w-full overflow-hidden bg-[#f8f8f8] border-b border-gray-100" style={{ height: 120 }}>
-                <TemplatePreview templateId="ss-001" brand={sampleBrand} size="card" />
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-[#1a1a1a]">Invoice Sheet</p>
-                  <span className="text-xs text-gray-500">$4.99</span>
-                </div>
-                <Link href="/templates/ss-001">
-                  <Button variant="outline" size="sm" className="w-full h-6 text-[10px] border-gray-200">Preview</Button>
-                </Link>
-              </div>
-            </div>
-            {/* Browse all card */}
-            <Link href="/templates" className="flex-shrink-0">
-              <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl h-full min-h-[188px] w-[160px] flex flex-col items-center justify-center gap-2 hover:border-gray-400 hover:bg-gray-100 transition-all duration-150 cursor-pointer p-4">
-                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </div>
-                <p className="text-xs font-medium text-[#1a1a1a] text-center">Browse all templates</p>
-                <p className="text-[10px] text-gray-400 text-center">10 designs available</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      {/* ── Footer / Account ── */}
-      <footer className="max-w-5xl w-full mx-auto px-6 pb-10">
-        <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
-          {/* User identity row */}
-          <div className="flex items-center gap-4 px-5 py-4 border-b border-gray-100">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-[#1a1a1a] text-white text-xs font-medium">JD</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1a1a1a]">Jane Doe</p>
-              <p className="text-xs text-gray-400">jane@example.com</p>
-            </div>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Free plan</span>
-          </div>
-
-          {/* Action links */}
-          <div className="grid grid-cols-3 divide-x divide-gray-100">
-            <Link href="/dashboard/brand">
-              <div className="flex items-center justify-center gap-2 px-4 py-3 text-xs text-gray-500 hover:text-[#1a1a1a] hover:bg-gray-50 transition-colors duration-150 cursor-pointer">
-                <Settings className="h-3.5 w-3.5" />
-                Brand settings
-              </div>
-            </Link>
-            <div className="flex items-center justify-center gap-2 px-4 py-3 text-xs text-gray-500 hover:text-[#1a1a1a] hover:bg-gray-50 transition-colors duration-150 cursor-pointer">
-              <HelpCircle className="h-3.5 w-3.5" />
-              Help &amp; support
-            </div>
-            <Link href="/">
-              <div className="flex items-center justify-center gap-2 px-4 py-3 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-150 cursor-pointer">
-                <LogOut className="h-3.5 w-3.5" />
-                Log out
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        <p className="text-center text-[11px] text-gray-300 mt-4">
-          Branddoc · Brand-persistent document generator
-        </p>
-      </footer>
+      </div>
     </div>
   )
 }
