@@ -7,10 +7,9 @@ import {
 import React, { useState } from "react";
 import { BlockRenderer } from "./components/BlockRenderer";
 import { getDefaultForType, initialBlocks } from "./components/constants";
-import { EditorCanvas } from "./components/EditorCanvas";
+import { DocsCanvas } from "./components/DocCanvas";
 import { EditorContextProvider } from "./components/EditorContext";
 import { EditorLeftSidebar } from "./components/EditorLeftSidebar";
-import { EditorRightSidebar } from "./components/EditorRightSidebar";
 import { FormattingToolbar } from "./components/FormattingToolbar";
 import { Block, BlockType } from "./components/types";
 
@@ -200,7 +199,8 @@ export default function EditorPage() {
           handleDragStart={handleDragStart}
           onInsertBlock={insertBlock}
         />
-
+        <DocsCanvas/>
+{/*
         <EditorCanvas
           blocks={blocks}
           selectedBlockId={selectedBlockId}
@@ -215,16 +215,16 @@ export default function EditorPage() {
           dropIndicator={dropIndicator}
           zoom={zoom}
           marginId={marginId}
-        />
+        /> */}
 
-        <EditorRightSidebar
+        {/* <EditorRightSidebar
           selectedBlockId={selectedBlockId}
           blocks={blocks}
           updateBlockContent={updateBlockContent}
           updateBlockStyle={updateBlockStyle}
           marginId={marginId}
           setMarginId={setMarginId}
-        />
+        /> */}
       </div>
 
       {/* ── PREVIEW MODAL ── */}
