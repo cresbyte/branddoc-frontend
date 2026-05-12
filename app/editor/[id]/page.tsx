@@ -1,24 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
 import {
-  ArrowLeft,
-  Undo2,
-  Redo2,
-  ZoomIn,
-  ZoomOut,
-  X,
-  FileText,
   Download,
-  ChevronDown,
-  Eye,
+  X
 } from "lucide-react";
-import { Block, BlockType } from "./components/types";
-import { initialBlocks, getDefaultForType } from "./components/constants";
+import React, { useState } from "react";
+import { BlockRenderer } from "./components/BlockRenderer";
+import { getDefaultForType, initialBlocks } from "./components/constants";
+import { EditorCanvas } from "./components/EditorCanvas";
+import { EditorContextProvider } from "./components/EditorContext";
 import { EditorLeftSidebar } from "./components/EditorLeftSidebar";
 import { EditorRightSidebar } from "./components/EditorRightSidebar";
-import { EditorCanvas } from "./components/EditorCanvas";
-import { BlockRenderer } from "./components/BlockRenderer";
+import { FormattingToolbar } from "./components/FormattingToolbar";
+import { Block, BlockType } from "./components/types";
 
 const ZOOM_STEPS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
 
@@ -38,6 +32,7 @@ export default function EditorPage() {
   const [zoom, setZoom] = useState(100);
   const [exportFormat, setExportFormat] = useState("docx");
   const [showFormatMenu, setShowFormatMenu] = useState(false);
+  const [marginId, setMarginId] = useState("normal");
 
   /* ── History ─────────────────────────────────────────────────────── */
 
@@ -188,149 +183,16 @@ export default function EditorPage() {
   /* ── Render ───────────────────────────────────────────────────────── */
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden font-sans">
+    <EditorContextProvider>
+      <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden font-sans">
 
       {/* ── TOOLBAR ── */}
-      <div className="h-[54px] bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 flex-shrink-0 z-20">
 
-        {/* Left: back + title */}
-        <div className="flex items-center gap-3 min-w-0">
-          <a
-            href="#"
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 font-medium transition-colors flex-shrink-0"
-          >
-            <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Back</span>
-          </a>
-          <div className="h-5 w-px bg-gray-200 flex-shrink-0" />
-          <FileText size={15} className="text-gray-400 flex-shrink-0" />
-          <input
-            type="text"
-            value={documentTitle}
-            onChange={(e) => setDocumentTitle(e.target.value)}
-            className="text-[14px] font-semibold text-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-100 rounded-md px-2 py-1 placeholder-gray-300 min-w-0 max-w-[200px] bg-transparent"
-            placeholder="Untitled document"
-          />
-        </div>
 
-        {/* Center: undo/redo + zoom */}
-        <div className="flex items-center gap-1 text-gray-400">
-          <button
-            onClick={undo}
-            disabled={historyIndex === 0}
-            title="Undo"
-            className={`p-1.5 rounded-md transition-colors ${
-              historyIndex > 0
-                ? "hover:bg-gray-100 text-gray-600"
-                : "opacity-30 cursor-not-allowed"
-            }`}
-          >
-            <Undo2 size={15} />
-          </button>
-          <button
-            onClick={redo}
-            disabled={historyIndex === history.length - 1}
-            title="Redo"
-            className={`p-1.5 rounded-md transition-colors ${
-              historyIndex < history.length - 1
-                ? "hover:bg-gray-100 text-gray-600"
-                : "opacity-30 cursor-not-allowed"
-            }`}
-          >
-            <Redo2 size={15} />
-          </button>
-
-          <div className="h-5 w-px bg-gray-200 mx-1.5 flex-shrink-0" />
-
-          <button
-            onClick={zoomOut}
-            disabled={zoom <= ZOOM_STEPS[0]}
-            title="Zoom out"
-            className={`p-1.5 rounded-md transition-colors ${
-              zoom > ZOOM_STEPS[0]
-                ? "hover:bg-gray-100 text-gray-600"
-                : "opacity-30 cursor-not-allowed"
-            }`}
-          >
-            <ZoomOut size={15} />
-          </button>
-          <button
-            onClick={() => setZoom(100)}
-            className="w-12 text-center text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-md py-1.5 transition-colors tabular-nums"
-            title="Reset zoom"
-          >
-            {zoom}%
-          </button>
-          <button
-            onClick={zoomIn}
-            disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
-            title="Zoom in"
-            className={`p-1.5 rounded-md transition-colors ${
-              zoom < ZOOM_STEPS[ZOOM_STEPS.length - 1]
-                ? "hover:bg-gray-100 text-gray-600"
-                : "opacity-30 cursor-not-allowed"
-            }`}
-          >
-            <ZoomIn size={15} />
-          </button>
-        </div>
-
-        {/* Right: preview + format + download */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowPreview(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white text-gray-600 transition-all shadow-sm"
-          >
-            <Eye size={13} />
-            Preview
-          </button>
-
-          <div className="h-5 w-px bg-gray-200" />
-
-          {/* Format picker */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFormatMenu((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white text-gray-600 transition-all shadow-sm"
-            >
-              {currentFormat.label}
-              <ChevronDown size={12} className="text-gray-400" />
-            </button>
-            {showFormatMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setShowFormatMenu(false)}
-                />
-                <div className="absolute right-0 top-full mt-1.5 z-40 bg-white border border-gray-100 rounded-xl shadow-2xl py-1 min-w-[170px]">
-                  {FORMAT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        setExportFormat(opt.value);
-                        setShowFormatMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 transition-colors ${
-                        exportFormat === opt.value
-                          ? "text-blue-600 bg-blue-50/60"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Download CTA */}
-          <button className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-gray-900 text-white rounded-lg hover:bg-black active:scale-95 transition-all shadow-sm">
-            <Download size={13} />
-            Download $4.99
-          </button>
-        </div>
-      </div>
+      <FormattingToolbar
+        selectedBlock={blocks.find((b) => b.id === selectedBlockId)}
+        updateBlockStyle={updateBlockStyle}
+      />
 
       {/* ── WORKSPACE ── */}
       <div className="flex flex-1 overflow-hidden">
@@ -352,6 +214,7 @@ export default function EditorPage() {
           handleDrop={handleDrop}
           dropIndicator={dropIndicator}
           zoom={zoom}
+          marginId={marginId}
         />
 
         <EditorRightSidebar
@@ -359,6 +222,8 @@ export default function EditorPage() {
           blocks={blocks}
           updateBlockContent={updateBlockContent}
           updateBlockStyle={updateBlockStyle}
+          marginId={marginId}
+          setMarginId={setMarginId}
         />
       </div>
 
@@ -428,6 +293,7 @@ export default function EditorPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </EditorContextProvider>
   );
 }

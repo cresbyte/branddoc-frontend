@@ -145,3 +145,155 @@ export const getDefaultForType = (type: BlockType): { content: any, style: any }
     default: return { content: {}, style: {} };
   }
 };
+
+export interface TableStyle {
+  id: string;
+  name: string;
+  group: string;
+  headerBg: string;
+  headerColor: string;
+  altRowBg: string;
+  borderColor: string;
+  outerBorderColor: string;
+  accentLeft?: string; // colored left border on first column
+}
+
+/** Inspired by Word's built-in table style gallery */
+export const TABLE_STYLES: TableStyle[] = [
+  // ── Plain Tables ─────────────────────────────────────────────────
+  {
+    id: "plain-none",
+    name: "Plain (no borders)",
+    group: "Plain Tables",
+    headerBg: "transparent",
+    headerColor: "#1a1a1a",
+    altRowBg: "transparent",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+  },
+  {
+    id: "plain-1",
+    name: "Plain Table 1",
+    group: "Plain Tables",
+    headerBg: "transparent",
+    headerColor: "#1a1a1a",
+    altRowBg: "transparent",
+    borderColor: "#d1d5db",
+    outerBorderColor: "transparent",
+  },
+  {
+    id: "plain-2",
+    name: "Plain Table 2",
+    group: "Plain Tables",
+    headerBg: "#f3f4f6",
+    headerColor: "#1a1a1a",
+    altRowBg: "transparent",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+  },
+  // ── Grid Tables ───────────────────────────────────────────────────
+  {
+    id: "grid-dark",
+    name: "Grid Table (Dark)",
+    group: "Grid Tables",
+    headerBg: "#1a1a1a",
+    headerColor: "#ffffff",
+    altRowBg: "transparent",
+    borderColor: "#1a1a1a",
+    outerBorderColor: "#1a1a1a",
+  },
+  {
+    id: "grid-blue",
+    name: "Grid Table (Blue)",
+    group: "Grid Tables",
+    headerBg: "#1e3a8a",
+    headerColor: "#ffffff",
+    altRowBg: "#eff6ff",
+    borderColor: "#bfdbfe",
+    outerBorderColor: "#1e3a8a",
+  },
+  {
+    id: "grid-green",
+    name: "Grid Table (Green)",
+    group: "Grid Tables",
+    headerBg: "#14532d",
+    headerColor: "#ffffff",
+    altRowBg: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    outerBorderColor: "#14532d",
+  },
+  {
+    id: "grid-orange",
+    name: "Grid Table (Orange)",
+    group: "Grid Tables",
+    headerBg: "#7c2d12",
+    headerColor: "#ffffff",
+    altRowBg: "#fff7ed",
+    borderColor: "#fed7aa",
+    outerBorderColor: "#7c2d12",
+  },
+  // ── List Tables ───────────────────────────────────────────────────
+  {
+    id: "list-light",
+    name: "List Table (Light)",
+    group: "List Tables",
+    headerBg: "#f8fafc",
+    headerColor: "#1a1a1a",
+    altRowBg: "#f1f5f9",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+  },
+  {
+    id: "list-blue",
+    name: "List Table (Blue)",
+    group: "List Tables",
+    headerBg: "#dbeafe",
+    headerColor: "#1e3a8a",
+    altRowBg: "#f0f9ff",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+    accentLeft: "#3b82f6",
+  },
+  {
+    id: "list-green",
+    name: "List Table (Green)",
+    group: "List Tables",
+    headerBg: "#dcfce7",
+    headerColor: "#14532d",
+    altRowBg: "#f0fdf4",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+    accentLeft: "#22c55e",
+  },
+  {
+    id: "list-amber",
+    name: "List Table (Amber)",
+    group: "List Tables",
+    headerBg: "#fef3c7",
+    headerColor: "#78350f",
+    altRowBg: "#fffbeb",
+    borderColor: "transparent",
+    outerBorderColor: "transparent",
+    accentLeft: "#f59e0b",
+  },
+];
+
+export interface MarginPreset {
+  id: string;
+  name: string;
+  label: string;
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+/** Standard Word page margin presets (in px at 96dpi; 1 inch = 96px) */
+export const MARGIN_PRESETS: MarginPreset[] = [
+  { id: "normal",   name: "Normal",   label: "Top/Bottom 1" + '\u2033' + " · Left/Right 1" + '\u2033',   top: 96,  right: 96,  bottom: 96,  left: 96  },
+  { id: "narrow",   name: "Narrow",   label: "All 0.5" + '\u2033',                                          top: 48,  right: 48,  bottom: 48,  left: 48  },
+  { id: "moderate", name: "Moderate", label: "Top/Bottom 1" + '\u2033' + " · Left/Right 0.75" + '\u2033',  top: 96,  right: 72,  bottom: 96,  left: 72  },
+  { id: "wide",     name: "Wide",     label: "Top/Bottom 1" + '\u2033' + " · Left/Right 2" + '\u2033',     top: 96,  right: 192, bottom: 96,  left: 192 },
+  { id: "mirrored", name: "Mirrored", label: "Outer 1" + '\u2033' + " · Inner 1.25" + '\u2033',            top: 96,  right: 96,  bottom: 96,  left: 120 },
+  { id: "office07", name: "Office 2003 Default", label: "Top/Bottom 1" + '\u2033' + " · Left/Right 1.25" + '\u2033', top: 96, right: 120, bottom: 96, left: 120 },
+];

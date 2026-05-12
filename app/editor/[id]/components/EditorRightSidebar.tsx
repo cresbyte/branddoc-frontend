@@ -1,5 +1,6 @@
 import React from "react";
 import { Block, sampleBrand } from "./types";
+import { MARGIN_PRESETS, TABLE_STYLES } from "./constants";
 import { AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
 interface EditorRightSidebarProps {
@@ -7,6 +8,8 @@ interface EditorRightSidebarProps {
   blocks: Block[];
   updateBlockContent: (id: string, updates: any) => void;
   updateBlockStyle: (id: string, updates: any) => void;
+  marginId: string;
+  setMarginId: (id: string) => void;
 }
 
 /* ── Tiny reusable field components ─────────────────────────────────── */
@@ -193,6 +196,8 @@ export function EditorRightSidebar({
   blocks,
   updateBlockContent,
   updateBlockStyle,
+  marginId,
+  setMarginId,
 }: EditorRightSidebarProps) {
   const sel = blocks.find((b) => b.id === selectedBlockId);
   const id = selectedBlockId!;
@@ -230,11 +235,20 @@ export function EditorRightSidebar({
                 </div>
               </Field>
               <Field label="Margins">
-                <select className={selectCls}>
-                  <option>Normal (2.54 cm)</option>
-                  <option>Narrow (1.27 cm)</option>
-                  <option>Wide (3.81 cm)</option>
+                <select
+                  className={selectCls}
+                  value={marginId}
+                  onChange={(e) => setMarginId(e.target.value)}
+                >
+                  {MARGIN_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
                 </select>
+                <div className="text-[10px] text-gray-400 mt-1 pl-1">
+                  {MARGIN_PRESETS.find(p => p.id === marginId)?.label}
+                </div>
               </Field>
               <Field label="Base font size">
                 <input type="number" defaultValue={14} className={inputCls} />
@@ -557,7 +571,7 @@ export function EditorRightSidebar({
         {/* ── Table ── */}
         {sel && sel.type === "table" && (
           <div className="space-y-4">
-            <SectionTitle>Table</SectionTitle>
+            <SectionTitle>Table Options</SectionTitle>
             <label className="flex items-center gap-2.5 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -569,21 +583,46 @@ export function EditorRightSidebar({
               />
               Alternating row colors
             </label>
-            <ColorField
-              label="Header background"
-              value={sel.style.headerBg || "#f5f5f5"}
-              onChange={(v) => updateBlockStyle(id, { headerBg: v })}
-            />
-            <Field label="Border style">
-              <select
-                className={selectCls}
-                value={sel.style.borderStyle || "light"}
-                onChange={(e) => updateBlockStyle(id, { borderStyle: e.target.value })}
-              >
-                <option value="light">Light</option>
-                <option value="none">None</option>
-              </select>
-            </Field>
+            <Divider />
+            
+            <SectionTitle>Table Styles Gallery</SectionTitle>
+            <div className="grid grid-cols-4 gap-2">
+              {TABLE_STYLES.map((ts) => {
+                const isActive = sel.style.tableStyleId === ts.id;
+                return (
+                  <button
+                    key={ts.id}
+                    title={ts.name}
+                    onClick={() => updateBlockStyle(id, { 
+                      tableStyleId: ts.id,
+                      headerBg: ts.headerBg,
+                      headerColor: ts.headerColor,
+                      altRowBg: ts.altRowBg,
+                      borderColor: ts.borderColor,
+                      outerBorderColor: ts.outerBorderColor,
+                      accentLeft: ts.accentLeft
+                    })}
+                    className={`h-10 border rounded shadow-sm overflow-hidden flex flex-col p-1 gap-px bg-white transition-all ${
+                      isActive ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    {/* Tiny visual representation of the table style */}
+                    <div style={{ backgroundColor: ts.headerBg === "transparent" ? "#f3f4f6" : ts.headerBg }} className="h-2 w-full shrink-0 flex gap-px">
+                       <div className="flex-1" style={{ borderRight: `1px solid ${ts.borderColor}` }} />
+                       <div className="flex-1" style={{ borderRight: `1px solid ${ts.borderColor}` }} />
+                       <div className="flex-1" />
+                    </div>
+                    <div style={{ backgroundColor: ts.altRowBg === "transparent" ? "#fff" : ts.altRowBg }} className="h-1.5 w-full shrink-0 border-b border-gray-100 flex gap-px">
+                       {ts.accentLeft && <div style={{ width: 2, backgroundColor: ts.accentLeft, height: "100%" }} />}
+                    </div>
+                     <div style={{ backgroundColor: "#fff" }} className="h-1.5 w-full shrink-0 border-b border-gray-100 flex gap-px">
+                       {ts.accentLeft && <div style={{ width: 2, backgroundColor: ts.accentLeft, height: "100%" }} />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
             <Divider />
             <SectionTitle>Rows &amp; Columns</SectionTitle>
             <p className="text-xs text-gray-400">

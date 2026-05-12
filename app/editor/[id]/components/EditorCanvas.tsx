@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Block, sampleBrand } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import { Lock } from "lucide-react";
+import { MARGIN_PRESETS, MarginPreset } from "./constants";
 
 interface EditorCanvasProps {
   blocks: Block[];
@@ -18,20 +19,16 @@ interface EditorCanvasProps {
   handleDrop: (e: React.DragEvent, index: number) => void;
   dropIndicator: number | null;
   zoom: number;
+  marginId: string;
 }
 
 // A4 at 96 dpi
 const A4_HEIGHT = 1123;
 const A4_WIDTH = 794;
 const PAGE_GAP = 24; // px gap between page cards
-const CONTENT_PADDING_H = 56; // px, each side (px-14 = 56px)
 // Approximate fixed heights – these get updated once from refs
 const APPROX_HEADER_H = 116;
 const APPROX_FOOTER_H = 98;
-const CONTENT_MARGIN_TOP = 32;  // mb-8 below header
-const CONTENT_MARGIN_BTM = 48;  // mt-12 above footer
-const USABLE_H =
-  A4_HEIGHT - APPROX_HEADER_H - APPROX_FOOTER_H - CONTENT_MARGIN_TOP - CONTENT_MARGIN_BTM;
 
 /** Distribute blocks across pages given per-block heights */
 function distributeToPages(
@@ -154,6 +151,7 @@ function PageCard({
   dropIndicator,
   onHeightMeasured,
   isLastPage,
+  margin,
 }: {
   pageIndex: number;
   pageBlocks: Block[];
@@ -171,6 +169,7 @@ function PageCard({
   dropIndicator: number | null;
   onHeightMeasured: (id: string, h: number) => void;
   isLastPage: boolean;
+  margin: MarginPreset;
 }) {
   return (
     <div
@@ -206,9 +205,10 @@ function PageCard({
       <div
         style={{
           flex: 1,
-          padding: `${CONTENT_MARGIN_TOP}px ${CONTENT_PADDING_H}px 0`,
+          padding: `${margin.top / 2}px ${margin.left}px 0`,
           display: "flex",
           flexDirection: "column",
+          overflow: "visible",
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onSelectCallback(null);
@@ -255,14 +255,41 @@ function PageCard({
 
         {/* Drop zone at page bottom */}
         <div
-          style={{ minHeight: CONTENT_MARGIN_BTM, flex: 1, position: "relative" }}
+          style={{ minHeight: margin.bottom / 2, flex: 1, position: "relative" }}
           onDragOver={(e) => handleDragOver(e, globalStartIndex + pageBlocks.length)}
           onDrop={(e) => handleDrop(e, globalStartIndex + pageBlocks.length)}
         >
           {dropIndicator === globalStartIndex + pageBlocks.length && (
-            <div style={{ position: "absolute", top: 4, left: 0, right: 0, display: "flex", alignItems: "center" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#3b82f6", flexShrink: 0 }} />
-              <div style={{ flex: 1, height: 2, backgroundColor: "#3b82f6" }} />
+            <div
+              className="drop-line"
+              style={{
+                position: "absolute",
+                top: 4,
+                left: 0,
+                right: 0,
+                display: "flex",
+                alignItems: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  backgroundColor: "#3b82f6",
+                  flexShrink: 0,
+                }}
+              />
+              <div
+                style={{
+                  flex: 1,
+                  height: 2,
+                  backgroundColor: "#3b82f6",
+                  borderRadius: 1,
+                  opacity: 0.8,
+                }}
+              />
             </div>
           )}
         </div>
@@ -286,9 +313,14 @@ export function EditorCanvas({
   handleDrop,
   dropIndicator,
   zoom,
+  marginId,
 }: EditorCanvasProps) {
   const [blockHeights, setBlockHeights] = useState<Map<string, number>>(new Map());
-  const [usableH, setUsableH] = useState(USABLE_H);
+  const marginPreset = MARGIN_PRESETS.find((m) => m.id === marginId) || MARGIN_PRESETS[0];
+
+  const [usableH, setUsableH] = useState(
+    A4_HEIGHT - APPROX_HEADER_H - APPROX_FOOTER_H - marginPreset.top / 2 - marginPreset.bottom / 2
+  );
 
   // Measure one header + footer to get accurate usable height
   const headerRef = useRef<HTMLDivElement>(null);
@@ -296,8 +328,8 @@ export function EditorCanvas({
   useEffect(() => {
     const hh = headerRef.current?.offsetHeight ?? APPROX_HEADER_H;
     const fh = footerRef.current?.offsetHeight ?? APPROX_FOOTER_H;
-    setUsableH(A4_HEIGHT - hh - fh - CONTENT_MARGIN_TOP - CONTENT_MARGIN_BTM);
-  }, []);
+    setUsableH(A4_HEIGHT - hh - fh - marginPreset.top / 2 - marginPreset.bottom / 2);
+  }, [marginPreset]);
 
   const handleBlockHeight = useCallback((id: string, h: number) => {
     setBlockHeights((prev) => {
@@ -319,8 +351,19 @@ export function EditorCanvas({
   }
 
   return (
-    <div
-      className="flex-1 overflow-auto bg-[#e8e8e8] flex flex-col items-center py-10"
+    <>
+      <style>{`
+        @keyframes dropLineIn {
+          from { opacity: 0; transform: scaleX(0.92); }
+          to   { opacity: 1; transform: scaleX(1); }
+        }
+        .drop-line {
+          animation: dropLineIn 0.1s ease-out;
+          transform-origin: left center;
+        }
+      `}</style>
+      <div
+        className="flex-1 overflow-auto bg-[#e8e8e8] flex flex-col items-center py-10"
       onClick={(e) => {
         if (e.target === e.currentTarget) onSelectCallback(null);
       }}
@@ -365,9 +408,11 @@ export function EditorCanvas({
             dropIndicator={dropIndicator}
             onHeightMeasured={handleBlockHeight}
             isLastPage={pageIdx === pageGroups.length - 1}
+            margin={marginPreset}
           />
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

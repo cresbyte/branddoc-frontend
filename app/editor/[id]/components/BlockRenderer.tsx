@@ -16,6 +16,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
+import { useEditorContext } from "./EditorContext";
 import { BlockAddMenu } from "./BlockAddMenu";
 
 interface BlockRendererProps {
@@ -155,6 +156,18 @@ export function BlockRenderer({
     }
   }, [block.content.text, editor]);
 
+  const { registerEditor } = useEditorContext();
+
+  useEffect(() => {
+    if (isSelected && editor) {
+      registerEditor(editor);
+    } else if (!isSelected && editor) {
+      // Optional: unregister when deselected if needed, 
+      // but FormattingToolbar hides entirely if !selectedBlock
+      // registerEditor(null);
+    }
+  }, [isSelected, editor, registerEditor]);
+
   let innerContent: React.ReactNode = null;
 
   switch (block.type) {
@@ -174,7 +187,7 @@ export function BlockRenderer({
             margin: 0,
           }}
         >
-          {editor && !isPreview && isSelected && <TextBubbleMenu editor={editor} />}
+          {editor && !isPreview && <TextBubbleMenu editor={editor} />}
           <EditorContent editor={editor} className="outline-none" />
         </div>
       );
@@ -193,7 +206,7 @@ export function BlockRenderer({
             lineHeight: block.style.lineHeight || 1.7,
           }}
         >
-          {editor && !isPreview && isSelected && <TextBubbleMenu editor={editor} />}
+          {editor && !isPreview && <TextBubbleMenu editor={editor} />}
           <EditorContent editor={editor} className="outline-none" />
         </div>
       );
@@ -325,17 +338,29 @@ export function BlockRenderer({
       innerContent = (
         <table
           className="w-full text-left border-collapse"
-          style={{ fontSize: "14px", color: "#1a1a1a" }}
+          style={{ 
+            fontSize: "14px", 
+            border: block.style.outerBorderColor && block.style.outerBorderColor !== "transparent" 
+              ? `1px solid ${block.style.outerBorderColor}` 
+              : "none"
+          }}
         >
           <thead>
-            <tr style={{ backgroundColor: block.style.headerBg || "#f5f5f5" }}>
+            <tr style={{ 
+              backgroundColor: block.style.headerBg || "#f5f5f5",
+              color: block.style.headerColor || "#1a1a1a"
+            }}>
               {block.content.headers?.map((h: string, i: number) => (
                 <th
                   key={i}
-                  className="p-3 border-b font-semibold"
+                  className="p-3 font-semibold"
                   style={{
-                    borderColor:
-                      block.style.borderStyle === "none" ? "transparent" : "#e5e5e5",
+                    borderBottom: block.style.borderColor && block.style.borderColor !== "transparent" 
+                      ? `2px solid ${block.style.borderColor}`
+                      : `1px solid ${block.style.headerBg === "transparent" ? "#e5e5e5" : "transparent"}`,
+                    borderRight: block.style.borderColor && block.style.borderColor !== "transparent" && i < block.content.headers.length - 1
+                      ? `1px solid ${block.style.borderColor}`
+                      : "none",
                   }}
                   contentEditable={!isPreview}
                   suppressContentEditableWarning
@@ -354,17 +379,24 @@ export function BlockRenderer({
               <tr
                 key={ri}
                 style={{
-                  backgroundColor:
-                    block.style.alternating && ri % 2 === 1 ? "#fafafa" : "transparent",
+                  backgroundColor: block.style.alternating && ri % 2 === 1 
+                    ? (block.style.altRowBg || "#fafafa") 
+                    : "transparent",
+                  color: "#1a1a1a"
                 }}
               >
                 {row.map((cell: string, ci: number) => (
                   <td
                     key={ci}
-                    className="p-3 border-b"
+                    className="p-3"
                     style={{
-                      borderColor:
-                        block.style.borderStyle === "none" ? "transparent" : "#e5e5e5",
+                      borderBottom: block.style.borderColor && block.style.borderColor !== "transparent" && ri < block.content.rows.length - 1
+                        ? `1px solid ${block.style.borderColor}` 
+                        : (ri < block.content.rows.length - 1 ? "1px solid #f0f0f0" : "none"),
+                      borderRight: block.style.borderColor && block.style.borderColor !== "transparent" && ci < row.length - 1
+                        ? `1px solid ${block.style.borderColor}`
+                        : "none",
+                      boxShadow: ci === 0 && block.style.accentLeft ? `inset 2px 0 0 0 ${block.style.accentLeft}` : "none",
                     }}
                     contentEditable={!isPreview}
                     suppressContentEditableWarning
@@ -390,8 +422,9 @@ export function BlockRenderer({
                   colSpan={block.content.headers?.length || 1}
                   className="p-3 text-right font-semibold"
                   style={{
-                    borderTop:
-                      block.style.borderStyle !== "none" ? "2px solid #e5e5e5" : "none",
+                    borderTop: block.style.borderColor && block.style.borderColor !== "transparent" 
+                      ? `2px solid ${block.style.borderColor}` 
+                      : "2px solid #e5e5e5",
                   }}
                 >
                   {block.content.totalsRow}
@@ -631,115 +664,125 @@ export function BlockRenderer({
   }
 
   return (
-    <div ref={wrapperRef} className="relative">
-      {/* Drop indicator above */}
+    <div ref={wrapperRef} className="relative group/block">
+
+      {/* ── Drop zone above ──────────────────────────────────────── */}
       <div
-        style={{ height: 6, position: "relative" }}
+        style={{ height: 8, position: "relative" }}
         onDragOver={(e) => handleDragOver(e, index)}
         onDrop={(e) => handleDrop(e, index)}
       >
         {dropIndicator === index && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#3b82f6", flexShrink: 0 }} />
-            <div style={{ flex: 1, height: 2, backgroundColor: "#3b82f6" }} />
+          <div
+            className="drop-line"
+            style={{
+              position: "absolute",
+              inset: "1px 0",
+              display: "flex",
+              alignItems: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                backgroundColor: "#3b82f6",
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                height: 2,
+                backgroundColor: "#3b82f6",
+                borderRadius: 1,
+                opacity: 0.8,
+              }}
+            />
           </div>
         )}
       </div>
 
-      {/* Block body */}
+      {/* ── Block body — zero visual chrome ──────────────────────── */}
       <div
-        className="relative group"
+        className="relative rounded-sm"
         style={{
-          borderLeft: isSelected ? "2px solid #3b82f6" : "2px solid transparent",
-          backgroundColor: isSelected ? "rgba(59,130,246,0.03)" : "transparent",
-          paddingLeft: 10,
-          paddingTop: 2,
-          paddingBottom: 2,
-          transition: "border-color 0.1s, background-color 0.1s",
+          backgroundColor: isSelected ? "rgba(59,130,246,0.04)" : "transparent",
+          paddingTop: 1,
+          paddingBottom: 1,
+          transition: "background-color 0.15s ease",
           cursor: "text",
-        }}
-        onMouseEnter={(e) => {
-          if (!isSelected) {
-            (e.currentTarget as HTMLElement).style.borderLeftColor = "#bfdbfe";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isSelected) {
-            (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent";
-          }
         }}
         onClick={() => {
           onSelect(block.id);
           if (isEditableText) editor?.commands.focus();
         }}
       >
-        {/* Drag handle */}
-        <div className="absolute top-0 -left-7 opacity-0 group-hover:opacity-100 flex items-center h-full pointer-events-none group-hover:pointer-events-auto">
+        {/* ── Left gutter: drag handle + add block (hover only) ──── */}
+        <div
+          className="absolute opacity-0 group-hover/block:opacity-100 transition-opacity duration-100 pointer-events-none group-hover/block:pointer-events-auto select-none"
+          style={{ left: -34, top: 0, display: "flex", flexDirection: "column", gap: 1 }}
+        >
+          {/* Drag handle */}
           <div
             draggable
             onDragStart={(e) =>
               handleDragStart(e, { id: block.id, type: block.type, isSidebar: false })
             }
-            style={{ padding: 4, color: "#cccccc", cursor: "grab" }}
-            className="hover:bg-gray-100 transition-colors"
+            className="p-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 rounded hover:bg-gray-100/90 transition-colors"
+            title="Drag to reorder"
+            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical size={13} />
           </div>
+
+          {/* Add block */}
+          <div style={{ position: "relative" }}>
+            <button
+              className="p-1 text-gray-300 hover:text-blue-500 rounded hover:bg-blue-50 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAddMenu((v) => !v);
+              }}
+              title="Add block"
+            >
+              <Plus size={12} />
+            </button>
+            {showAddMenu && (
+              <div style={{ position: "absolute", left: 28, top: 0, zIndex: 50 }}>
+                <BlockAddMenu
+                  blockId={block.id}
+                  onAdd={(id, type) => {
+                    addBlockAbove(id, type);
+                    setShowAddMenu(false);
+                  }}
+                  onClose={() => setShowAddMenu(false)}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Right actions: duplicate + delete (hover only) ──────── */}
         <div
-          className="absolute top-1 right-0 opacity-0 group-hover:opacity-100 flex gap-px z-10 transition-opacity"
-          style={{ background: "#fff", border: "1px solid #e5e5e5", padding: "2px" }}
+          className="absolute opacity-0 group-hover/block:opacity-100 transition-opacity duration-100 flex gap-px pointer-events-none group-hover/block:pointer-events-auto z-10"
+          style={{ top: 0, right: 0 }}
         >
           <button
-            style={{ padding: "3px 5px", color: "#aaaaaa", lineHeight: 1 }}
-            className="hover:bg-gray-50 hover:text-gray-600 transition-colors"
+            className="p-1.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             onClick={(e) => duplicateBlock(block.id, e)}
-            title="Duplicate"
+            title="Duplicate block"
           >
-            <Copy size={12} />
+            <Copy size={11} />
           </button>
           <button
-            style={{ padding: "3px 5px", color: "#aaaaaa", lineHeight: 1 }}
-            className="hover:bg-red-50 hover:text-red-500 transition-colors"
+            className="p-1.5 rounded text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
             onClick={(e) => deleteBlock(block.id, e)}
-            title="Delete"
+            title="Delete block"
           >
-            <Trash2 size={12} />
-          </button>
-        </div>
-
-        {/* Add block above */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 z-20">
-          {showAddMenu && (
-            <BlockAddMenu
-              blockId={block.id}
-              onAdd={(id, type) => addBlockAbove(id, type)}
-              onClose={() => setShowAddMenu(false)}
-            />
-          )}
-          <button
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              border: "1px solid #93c5fd",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#3b82f6",
-              cursor: "pointer",
-            }}
-            className="hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowAddMenu((v) => !v);
-            }}
-            title="Add block above"
-          >
-            <Plus size={11} />
+            <Trash2 size={11} />
           </button>
         </div>
 
