@@ -1,18 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
    FileText, Palette, Layers, Sparkles, ArrowRight,
    Check, ChevronDown, Menu, X, Receipt,
    FileCheck, Shield, BarChart3, Briefcase,
    Mail, Star, Quote, Globe, Zap, Users,
 } from "lucide-react";
+import { PublicNavbar } from "@/components/PublicNavbar";
+import { PublicFooter } from "@/components/PublicFooter";
+
 
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS & DATA
 ══════════════════════════════════════════════════════════════ */
 
-const NAV_LINKS = ["Product", "Templates", "Pricing", "Customers", "Blog"];
 
 const LOGOS = ["Acme Co.", "Velocity", "Bilt Inc.", "Surge", "Nexus", "Orbit"];
 
@@ -187,83 +190,7 @@ function DocMockup({
    SECTIONS
 ══════════════════════════════════════════════════════════════ */
 
-/** NAVBAR */
-function Navbar() {
-   const [scrolled, setScrolled] = useState(false);
-   const [menuOpen, setMenuOpen] = useState(false);
 
-   useEffect(() => {
-      const onScroll = () => setScrolled(window.scrollY > 20);
-      window.addEventListener("scroll", onScroll);
-      return () => window.removeEventListener("scroll", onScroll);
-   }, []);
-
-   return (
-      <nav style={{
-         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-         transition: "all 0.2s",
-         background: scrolled ? "rgba(255,255,255,0.95)" : "transparent",
-         backdropFilter: scrolled ? "blur(12px)" : "none",
-         borderBottom: scrolled ? "0.5px solid #E2E8F0" : "none",
-      }}>
-         <div style={{
-            maxWidth: 1120, margin: "0 auto",
-            padding: "0 24px", height: 64,
-            display: "flex", alignItems: "center", gap: 40,
-         }}>
-            {/* Logo */}
-            <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
-               <div style={{
-                  width: 28, height: 28, borderRadius: 7,
-                  background: "linear-gradient(135deg, #1D4ED8, #3B82F6)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-               }}>
-                  <FileText size={14} color="#fff" />
-               </div>
-               <span style={{
-                  fontSize: 16, fontWeight: 700, color: "#0F172A",
-                  fontFamily: "'Fraunces', Georgia, serif", letterSpacing: "-0.02em",
-               }}>DocCraft</span>
-            </div>
-
-            {/* Nav links */}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
-               {NAV_LINKS.map((link) => (
-                  <button key={link} style={{
-                     background: "none", border: "none", cursor: "pointer",
-                     padding: "6px 12px", borderRadius: 7,
-                     fontSize: 13.5, color: "#475569", fontFamily: "inherit",
-                     transition: "color 0.1s",
-                  }}
-                     onMouseEnter={(e) => (e.currentTarget.style.color = "#0F172A")}
-                     onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
-                  >{link}</button>
-               ))}
-            </div>
-
-            {/* CTA */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-               <button style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontSize: 13.5, color: "#475569", fontFamily: "inherit", padding: "6px 12px",
-               }}>Log in</button>
-               <button style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "8px 18px", background: "#0F172A",
-                  border: "none", borderRadius: 9, cursor: "pointer",
-                  fontSize: 13.5, fontWeight: 500, color: "#fff", fontFamily: "inherit",
-                  transition: "background 0.15s",
-               }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#1D4ED8")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#0F172A")}
-               >
-                  Get started free <ArrowRight size={13} />
-               </button>
-            </div>
-         </div>
-      </nav>
-   );
-}
 
 /** HERO */
 function Hero() {
@@ -332,31 +259,35 @@ function Hero() {
 
             {/* CTAs */}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-               <button style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "14px 28px", background: "#0F172A",
-                  border: "none", borderRadius: 12, cursor: "pointer",
-                  fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
-                  boxShadow: "0 4px 20px rgba(15,23,42,0.25)",
-                  transition: "all 0.15s",
-               }}
-                  onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
-                  onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
-               >
-                  Start for free <ArrowRight size={16} />
-               </button>
-               <button style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "14px 28px", background: "#fff",
-                  border: "1.5px solid #E2E8F0", borderRadius: 12, cursor: "pointer",
-                  fontSize: 15, fontWeight: 500, color: "#0F172A", fontFamily: "'DM Sans', system-ui, sans-serif",
-                  transition: "all 0.15s",
-               }}
-                  onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#CBD5E1"); (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)"); }}
-                  onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.boxShadow = "none"); }}
-               >
-                  See templates
-               </button>
+               <Link href="/auth" style={{ textDecoration: "none" }}>
+                  <button style={{
+                     display: "flex", alignItems: "center", gap: 8,
+                     padding: "14px 28px", background: "#0F172A",
+                     border: "none", borderRadius: 12, cursor: "pointer",
+                     fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
+                     boxShadow: "0 4px 20px rgba(15,23,42,0.25)",
+                     transition: "all 0.15s",
+                  }}
+                     onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
+                     onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
+                  >
+                     Start for free <ArrowRight size={16} />
+                  </button>
+               </Link>
+               <Link href="/templates" style={{ textDecoration: "none" }}>
+                  <button style={{
+                     display: "flex", alignItems: "center", gap: 8,
+                     padding: "14px 28px", background: "#fff",
+                     border: "1.5px solid #E2E8F0", borderRadius: 12, cursor: "pointer",
+                     fontSize: 15, fontWeight: 500, color: "#0F172A", fontFamily: "'DM Sans', system-ui, sans-serif",
+                     transition: "all 0.15s",
+                  }}
+                     onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#CBD5E1"); (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)"); }}
+                     onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.boxShadow = "none"); }}
+                  >
+                     See templates
+                  </button>
+               </Link>
             </div>
 
             {/* Trust line */}
@@ -621,19 +552,21 @@ function TemplatesSection() {
             </div>
 
             <div style={{ textAlign: "center", marginTop: 48 }}>
-               <button style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "12px 24px", border: "1.5px solid #E2E8F0",
-                  borderRadius: 10, background: "#fff", cursor: "pointer",
-                  fontSize: 14, fontWeight: 500, color: "#0F172A",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  transition: "all 0.15s",
-               }}
-                  onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#1D4ED8"); (e.currentTarget.style.color = "#1D4ED8"); }}
-                  onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.color = "#0F172A"); }}
-               >
-                  Browse all templates <ArrowRight size={14} />
-               </button>
+               <Link href="/templates" style={{ textDecoration: "none" }}>
+                  <button style={{
+                     display: "inline-flex", alignItems: "center", gap: 8,
+                     padding: "12px 24px", border: "1.5px solid #E2E8F0",
+                     borderRadius: 10, background: "#fff", cursor: "pointer",
+                     fontSize: 14, fontWeight: 500, color: "#0F172A",
+                     fontFamily: "'DM Sans', system-ui, sans-serif",
+                     transition: "all 0.15s",
+                  }}
+                     onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#1D4ED8"); (e.currentTarget.style.color = "#1D4ED8"); }}
+                     onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.color = "#0F172A"); }}
+                  >
+                     Browse all templates <ArrowRight size={14} />
+                  </button>
+               </Link>
             </div>
          </div>
       </section>
@@ -937,24 +870,26 @@ function Pricing() {
                         ))}
                      </div>
 
-                     <button style={{
-                        width: "100%", height: 42,
-                        background: plan.highlight ? "#0F172A" : "rgba(255,255,255,0.08)",
-                        border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: 10, cursor: "pointer",
-                        fontSize: 14, fontWeight: 500,
-                        color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
-                        transition: "all 0.15s",
-                     }}
-                        onMouseEnter={(e) => {
-                           if (plan.highlight) (e.currentTarget.style.background = "#1D4ED8");
-                           else (e.currentTarget.style.background = "rgba(255,255,255,0.13)");
+                     <Link href="/auth" style={{ textDecoration: "none" }}>
+                        <button style={{
+                           width: "100%", height: 42,
+                           background: plan.highlight ? "#0F172A" : "rgba(255,255,255,0.08)",
+                           border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.12)",
+                           borderRadius: 10, cursor: "pointer",
+                           fontSize: 14, fontWeight: 500,
+                           color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
+                           transition: "all 0.15s",
                         }}
-                        onMouseLeave={(e) => {
-                           if (plan.highlight) (e.currentTarget.style.background = "#0F172A");
-                           else (e.currentTarget.style.background = "rgba(255,255,255,0.08)");
-                        }}
-                     >{plan.cta}</button>
+                           onMouseEnter={(e) => {
+                              if (plan.highlight) (e.currentTarget.style.background = "#1D4ED8");
+                              else (e.currentTarget.style.background = "rgba(255,255,255,0.13)");
+                           }}
+                           onMouseLeave={(e) => {
+                              if (plan.highlight) (e.currentTarget.style.background = "#0F172A");
+                              else (e.currentTarget.style.background = "rgba(255,255,255,0.08)");
+                           }}
+                        >{plan.cta}</button>
+                     </Link>
                   </div>
                ))}
             </div>
@@ -996,110 +931,30 @@ function CTABanner() {
                Start free — no credit card needed.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-               <button style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "14px 32px", background: "#0F172A",
-                  border: "none", borderRadius: 12, cursor: "pointer",
-                  fontSize: 15, fontWeight: 600, color: "#fff",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  boxShadow: "0 4px 20px rgba(15,23,42,0.2)",
-                  transition: "all 0.15s",
-               }}
-                  onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
-                  onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
-               >
-                  Get started free <ArrowRight size={15} />
-               </button>
+               <Link href="/auth" style={{ textDecoration: "none" }}>
+                  <button style={{
+                     display: "flex", alignItems: "center", gap: 8,
+                     padding: "14px 32px", background: "#0F172A",
+                     border: "none", borderRadius: 12, cursor: "pointer",
+                     fontSize: 15, fontWeight: 600, color: "#fff",
+                     fontFamily: "'DM Sans', system-ui, sans-serif",
+                     boxShadow: "0 4px 20px rgba(15,23,42,0.2)",
+                     transition: "all 0.15s",
+                  }}
+                     onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
+                     onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
+                  >
+                     Get started free <ArrowRight size={15} />
+                  </button>
+               </Link>
             </div>
          </div>
       </section>
    );
 }
 
-/** FOOTER */
-function Footer() {
-   const cols = [
-      { title: "Product", links: ["Templates", "Brand Kit", "Pricing", "Changelog"] },
-      { title: "Resources", links: ["Documentation", "Blog", "Customer Stories", "Status"] },
-      { title: "Company", links: ["About", "Careers", "Contact", "Privacy"] },
-   ];
 
-   return (
-      <footer style={{
-         background: "#0B1120", borderTop: "1px solid rgba(255,255,255,0.06)",
-         padding: "60px 24px 40px",
-      }}>
-         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-            <div style={{ display: "flex", gap: 80, marginBottom: 48, flexWrap: "wrap" }}>
-               {/* Brand */}
-               <div style={{ flex: "0 0 220px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
-                     <div style={{
-                        width: 28, height: 28, borderRadius: 7,
-                        background: "linear-gradient(135deg, #1D4ED8, #3B82F6)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                     }}>
-                        <FileText size={14} color="#fff" />
-                     </div>
-                     <span style={{
-                        fontSize: 16, fontWeight: 700, color: "#fff",
-                        fontFamily: "'Fraunces', Georgia, serif",
-                     }}>DocCraft</span>
-                  </div>
-                  <p style={{
-                     fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.8,
-                     fontFamily: "'DM Sans', system-ui, sans-serif",
-                  }}>
-                     Brand-first document creation for modern teams.
-                  </p>
-               </div>
 
-               {/* Link columns */}
-               {cols.map((col) => (
-                  <div key={col.title} style={{ flex: "1 0 120px" }}>
-                     <div style={{
-                        fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-                        color: "rgba(255,255,255,0.3)", textTransform: "uppercase",
-                        marginBottom: 16, fontFamily: "'DM Sans', system-ui, sans-serif",
-                     }}>{col.title}</div>
-                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {col.links.map((link) => (
-                           <span key={link} style={{
-                              fontSize: 13.5, color: "rgba(255,255,255,0.45)",
-                              cursor: "pointer", transition: "color 0.1s",
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                           }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
-                           >{link}</span>
-                        ))}
-                     </div>
-                  </div>
-               ))}
-            </div>
-
-            <div style={{
-               borderTop: "1px solid rgba(255,255,255,0.06)",
-               paddingTop: 24,
-               display: "flex", justifyContent: "space-between", alignItems: "center",
-               flexWrap: "wrap", gap: 12,
-            }}>
-               <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                  © 2025 DocCraft. All rights reserved.
-               </span>
-               <div style={{ display: "flex", gap: 20 }}>
-                  {["Privacy Policy", "Terms of Service"].map((l) => (
-                     <span key={l} style={{
-                        fontSize: 12.5, color: "rgba(255,255,255,0.25)",
-                        cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif",
-                     }}>{l}</span>
-                  ))}
-               </div>
-            </div>
-         </div>
-      </footer>
-   );
-}
 
 /* ══════════════════════════════════════════════════════════════
    ROOT
@@ -1126,7 +981,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-         <Navbar />
+         <PublicNavbar />
          <Hero />
          <LogoBar />
          <BrandSection />
@@ -1136,7 +991,7 @@ export default function LandingPage() {
          <Testimonials />
          <Pricing />
          <CTABanner />
-         <Footer />
+         <PublicFooter />
       </>
    );
 }

@@ -1,4 +1,5 @@
-import { LandingNavbar } from "@/components/landing-navbar"
+import { PublicNavbar } from "@/components/PublicNavbar"
+import { PublicFooter } from "@/components/PublicFooter"
 import { notFound } from "next/navigation"
 
 const resourcesData: Record<string, { title: string, content: string, type: string }> = {
@@ -14,7 +15,7 @@ const resourcesData: Record<string, { title: string, content: string, type: stri
   },
   "security-whitepaper": {
     title: "Security Whitepaper",
-    content: "A detailed look at how Branddoc handles data encryption, privacy, and secure client communication.",
+    content: "A detailed look at how DocCraft handles data encryption, privacy, and secure client communication.",
     type: "Whitepaper"
   }
 }
@@ -35,31 +36,33 @@ export default async function ResourcePage({ params }: { params: Promise<{ slug:
 
 function ResourceDetail({ title, content, type }: { title: string, content: string, type: string }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <LandingNavbar />
-      <main className="flex-1 pt-24 pb-12">
+    <div className="flex min-h-screen flex-col" style={{ background: "#F8FAFC" }}>
+      <PublicNavbar />
+      <main className="flex-1 pt-32 pb-24">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="mb-4 inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
+          <div style={{ padding: "6px 14px", background: "#EFF6FF", color: "#1D4ED8", borderRadius: "100px", fontSize: 13, fontWeight: 700, display: "inline-block", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 24 }}>
             {type}
           </div>
-          <h1 className="text-5xl font-extrabold mb-8">{title}</h1>
-          <div className="prose prose-lg dark:prose-invert">
-            <p className="text-2xl text-muted-foreground mb-12 leading-relaxed">
+          <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 800, color: "#0F172A", fontFamily: "var(--font-serif)", marginBottom: 32, lineHeight: 1.1 }}>{title}</h1>
+          
+          <div style={{ fontFamily: "var(--font-dm-sans)" }}>
+            <p style={{ fontSize: 22, color: "#64748B", lineHeight: 1.6, marginBottom: 48 }}>
               {content}
             </p>
-            <div className="p-8 border rounded-2xl bg-muted/30">
-              <h2 className="text-xl font-bold mb-4 italic">Sample Resource Content</h2>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-              <p className="mt-4">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+            
+            <div style={{ padding: "40px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.02)" }}>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: "#0F172A", fontFamily: "var(--font-serif)", marginBottom: 20 }}>Resource Overview</h2>
+              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
+                This resource provides an in-depth exploration of the subject matter, designed to help professional teams optimize their workflows. We cover everything from initial setup to advanced brand management strategies.
+              </p>
+              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8 }}>
+                Our goal is to ensure that your team is equipped with the best possible information to maintain high standards across all documentation.
+              </p>
             </div>
           </div>
         </div>
       </main>
-      <footer className="border-t py-12">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2024 Branddoc. All rights reserved.</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   )
 }
