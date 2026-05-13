@@ -1,568 +1,1142 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { FileText, Menu, Check, ArrowRight, Star, PenTool, LayoutTemplate, Share2, Layers, DownloadCloud, Zap, MonitorSmartphone } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import React, { useState, useEffect, useRef } from "react";
+import {
+   FileText, Palette, Layers, Sparkles, ArrowRight,
+   Check, ChevronDown, Menu, X, Receipt,
+   FileCheck, Shield, BarChart3, Briefcase,
+   Mail, Star, Quote, Globe, Zap, Users,
+} from "lucide-react";
 
-export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+/* ══════════════════════════════════════════════════════════════
+   CONSTANTS & DATA
+══════════════════════════════════════════════════════════════ */
 
-  return (
-    <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-white selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
-      
-      {/* ── Navbar ── */}
-      <header className="fixed top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 h-[72px] flex items-center justify-between max-w-[1400px]">
-          <div className="flex items-center gap-10">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="bg-indigo-600 p-2 rounded-xl group-hover:bg-indigo-700 transition-colors shadow-sm">
-                <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">11docs</span>
-            </Link>
-            <nav className="hidden lg:flex items-center gap-8">
-              <Link href="/templates" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Templates</Link>
-              <Link href="#" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Customers</Link>
-              <Link href="#" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Inspiration</Link>
-              <Link href="#" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Features</Link>
-              <Link href="#" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Pricing</Link>
-            </nav>
-          </div>
-          <div className="hidden lg:flex items-center gap-6">
-            <Link href="/login" className="text-[15px] font-medium text-gray-600 hover:text-indigo-600 transition-colors">Log in</Link>
-            <Link href="#" className="text-[15px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors">Contact sales</Link>
-            <Link href="/register">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 py-5 shadow-sm text-[15px] font-semibold transition-all">
-                Try for free
-              </Button>
-            </Link>
-          </div>
-          <div className="lg:hidden flex items-center">
-            <Button variant="ghost" size="icon" className="text-gray-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              <Menu className="w-6 h-6" />
-            </Button>
-          </div>
-        </div>
-      </header>
+const NAV_LINKS = ["Product", "Templates", "Pricing", "Customers", "Blog"];
 
-      {/* spacer for fixed nav */}
-      <div className="h-[72px]" />
+const LOGOS = ["Acme Co.", "Velocity", "Bilt Inc.", "Surge", "Nexus", "Orbit"];
 
-      <main className="flex-1 w-full flex flex-col">
-        
-        {/* ── 1. Hero Section (Deep Indigo) ── */}
-        <section className="bg-indigo-700 relative pt-20 pb-48 lg:pt-28 lg:pb-56 overflow-hidden">
-          {/* Subtle background waves/blobs */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-             <div className="absolute top-10 left-10 w-[500px] h-[500px] bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-             <div className="absolute top-10 right-20 w-[400px] h-[400px] bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-          </div>
+const FEATURES = [
+   {
+      icon: <Palette size={18} />,
+      title: "One brand, every document",
+      body: "Set up your brand once — logo, colors, fonts, footer — and it flows into every invoice, report, and letter you create.",
+      color: "#0C4A6E",
+      accent: "#38BDF8",
+   },
+   {
+      icon: <Layers size={18} />,
+      title: "80+ professional templates",
+      body: "From SLAs to quotations, our template library covers every business document category with multiple style options.",
+      color: "#3B0764",
+      accent: "#C084FC",
+   },
+   {
+      icon: <Zap size={18} />,
+      title: "Built for speed",
+      body: "A pre-configured editor means you go from blank to branded document in under two minutes. No design skills required.",
+      color: "#14532D",
+      accent: "#4ADE80",
+   },
+   {
+      icon: <Users size={18} />,
+      title: "Team-ready from day one",
+      body: "Share brand kits across your team so every colleague produces on-brand documents automatically.",
+      color: "#7C2D12",
+      accent: "#FB923C",
+   },
+];
 
-          <div className="container mx-auto px-4 max-w-4xl text-center relative z-10">
-             <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
-               The go-to document template builder that converts
-             </h1>
-             <p className="text-lg md:text-xl text-indigo-100 max-w-2xl mx-auto mb-10 font-medium">
-               Fast-track your brand's growth. Design, manage, and share beautifully crafted branded templates across your organization with zero design experience required.
-             </p>
-             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/register">
-                  <Button className="bg-[#fc5c65] hover:bg-[#eb4d55] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg transition-transform hover:scale-105">
-                    Start designing
-                  </Button>
-                </Link>
-             </div>
-          </div>
-        </section>
+const TEMPLATE_CATEGORIES = [
+   { icon: <Receipt size={14} />, label: "Invoices", count: 6, color: "#0C4A6E", accent: "#38BDF8" },
+   { icon: <FileCheck size={14} />, label: "Quotations", count: 4, color: "#854F0B", accent: "#FCD34D" },
+   { icon: <Shield size={14} />, label: "SLAs", count: 3, color: "#14532D", accent: "#4ADE80" },
+   { icon: <BarChart3 size={14} />, label: "Reports", count: 5, color: "#3B0764", accent: "#C084FC" },
+   { icon: <Briefcase size={14} />, label: "Proposals", count: 4, color: "#7C2D12", accent: "#FB923C" },
+   { icon: <Mail size={14} />, label: "Letters", count: 5, color: "#0E7490", accent: "#22D3EE" },
+];
 
-        {/* ── 2. Hero Mockup Overlay ── */}
-        <section className="relative z-20 -mt-32 lg:-mt-40 mb-16 container mx-auto px-4 max-w-5xl">
-           <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 flex flex-col">
-              {/* Fake Browser Chrome */}
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
-                 <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                 </div>
-                 <div className="mx-auto bg-white border border-gray-200 rounded-md py-1 px-4 text-xs text-gray-400 font-mono w-64 text-center">app.11docs.com</div>
-              </div>
-              {/* Fake Dashboard View */}
-              <div className="flex bg-[#fcfdfd] h-[400px] md:h-[600px]">
-                 {/* Sidebar */}
-                 <div className="w-16 md:w-56 border-r border-gray-100 p-4 hidden sm:flex flex-col gap-4">
-                    <div className="h-8 w-full bg-gray-100 rounded-md"></div>
-                    <div className="h-4 w-3/4 bg-indigo-50 rounded-md"></div>
-                    <div className="h-4 w-full bg-gray-100 rounded-md"></div>
-                    <div className="h-4 w-5/6 bg-gray-100 rounded-md"></div>
-                 </div>
-                 {/* Main Canvas */}
-                 <div className="flex-1 p-8 overflow-hidden relative flex flex-col items-center">
-                    <div className="w-full max-w-xl bg-white shadow-xl rotate-[1deg] aspect-[3/4] p-8 flex flex-col gap-6 ring-1 ring-gray-900/5">
-                       <div className="w-20 h-20 rounded-full bg-indigo-100 mx-auto mt-4"></div>
-                       <div className="h-10 bg-gray-100 rounded mx-auto w-3/4"></div>
-                       <div className="h-4 bg-gray-50 rounded mx-auto w-1/2 mt-4"></div>
-                       <div className="space-y-3 mt-8">
-                          <div className="h-3 bg-gray-100 rounded w-full"></div>
-                          <div className="h-3 bg-gray-100 rounded w-5/6"></div>
-                          <div className="h-3 bg-gray-100 rounded w-full"></div>
-                       </div>
-                       <div className="mt-auto h-12 bg-indigo-600 rounded-md mx-auto w-1/3"></div>
-                    </div>
-                    {/* Floating fake tools */}
-                    <div className="absolute top-1/4 right-8 bg-white p-3 rounded-xl shadow-lg border border-gray-100 flex flex-col gap-3">
-                       <div className="w-8 h-8 rounded bg-blue-50"></div>
-                       <div className="w-8 h-8 rounded bg-green-50"></div>
-                       <div className="w-8 h-8 rounded bg-amber-50"></div>
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </section>
+const TESTIMONIALS = [
+   {
+      quote: "DocCraft cut our invoice turnaround from 20 minutes to 90 seconds. The brand kit is a game-changer for our team.",
+      name: "Amina Kariuki",
+      role: "Operations Lead, Velocity Africa",
+      initials: "AK",
+      color: "#0C4A6E",
+   },
+   {
+      quote: "We tried four different tools before DocCraft. Nothing else let us apply our full brand identity this seamlessly.",
+      name: "James Mwangi",
+      role: "Founder, Bilt Consulting",
+      initials: "JM",
+      color: "#14532D",
+   },
+   {
+      quote: "Our clients actually comment on how professional our documents look. That's never happened before.",
+      name: "Chloe Nderitu",
+      role: "Creative Director, Surge Studio",
+      initials: "CN",
+      color: "#7C2D12",
+   },
+];
 
-        {/* ── 3. Logos ── */}
-        <section className="py-10 border-b border-gray-100">
-          <div className="container mx-auto px-4 text-center">
-             <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-8">Trusted by top agencies & brands worldwide</p>
-             <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-                {/* using simple text/svg patterns for logos */}
-                <div className="font-bold text-xl flex items-center gap-2"><div className="w-6 h-6 bg-blue-500 rounded-sm"></div> Netflix</div>
-                <div className="font-bold text-xl flex items-center gap-2"><div className="w-6 h-6 rounded-full border-4 border-red-500"></div> Target</div>
-                <div className="font-bold text-xl flex items-center gap-2"><div className="w-6 h-6 bg-cyan-500 rotate-45"></div> Dropbox</div>
-                <div className="font-bold text-xl flex items-center gap-2"><div className="w-6 h-6 bg-orange-500 rounded-full"></div> Amazon</div>
-                <div className="font-bold text-xl flex items-center gap-2 hidden md:flex"><div className="w-6 h-6 bg-green-500 rounded-tl-xl rounded-br-xl"></div> Spotify</div>
-             </div>
-          </div>
-        </section>
+const STEPS = [
+   { num: "01", title: "Set up your brand", body: "Upload your logo, pick your colors and fonts. Done in 3 minutes." },
+   { num: "02", title: "Choose a template", body: "Pick from 80+ professionally designed document templates." },
+   { num: "03", title: "Your brand is applied automatically", body: "Open the editor and your letterhead, footer, and colors are already there." },
+   { num: "04", title: "Export and share", body: "Download as PDF or share a live link — polished and professional every time." },
+];
 
-        {/* ── 4. Testimonials & Stats (Light purple bg) ── */}
-        <section className="py-24 bg-indigo-50/50">
-           <div className="container mx-auto px-4 max-w-[1200px]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                 {/* Left: Text & Stats */}
-                 <div className="space-y-12">
-                    <div>
-                       <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-tight">
-                         Try what builder made to deliver everywhere.
-                       </h2>
-                    </div>
-                    <div className="grid grid-cols-2 gap-8">
-                       <div>
-                          <div className="text-4xl font-extrabold text-indigo-600 mb-2">90%</div>
-                          <p className="text-gray-600 text-[15px] font-medium">Faster template creation compared to Word directly</p>
-                       </div>
-                       <div>
-                          <div className="text-4xl font-extrabold text-indigo-600 mb-2">75%</div>
-                          <p className="text-gray-600 text-[15px] font-medium">Increase in brand compliance across all teams</p>
-                       </div>
-                       <div>
-                          <div className="text-4xl font-extrabold text-indigo-600 mb-2">640k+</div>
-                          <p className="text-gray-600 text-[15px] font-medium">Documents generated successfully this year</p>
-                       </div>
-                       <div>
-                          <div className="text-4xl font-extrabold text-indigo-600 mb-2">70%</div>
-                          <p className="text-gray-600 text-[15px] font-medium">Reduction in design resource bottleneck</p>
-                       </div>
-                    </div>
-                 </div>
+/* ══════════════════════════════════════════════════════════════
+   MICRO-COMPONENTS
+══════════════════════════════════════════════════════════════ */
 
-                 {/* Right: Testimonial Cards */}
-                 <div className="relative">
-                    <div className="bg-white rounded-2xl shadow-xl p-8 relative z-10 border border-gray-100 -rotate-2">
-                       <div className="flex gap-1 text-amber-400 mb-4">
-                          <Star className="w-5 h-5 fill-current" /><Star className="w-5 h-5 fill-current" /><Star className="w-5 h-5 fill-current" /><Star className="w-5 h-5 fill-current" /><Star className="w-5 h-5 fill-current" />
-                       </div>
-                       <p className="text-lg text-slate-900 font-medium mb-6 leading-relaxed">
-                         "We used to spend hours fixing broken layouts in Google Docs whenever someone copy-pasted. 11docs solved this entirely. It's truly a game-changer for our agency workflows."
-                       </p>
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-700">MR</div>
-                          <div>
-                             <p className="font-bold text-slate-900">Michael Ross</p>
-                             <p className="text-sm text-gray-500">Creative Director, Apex Digital</p>
-                          </div>
-                          <div className="ml-auto w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs">A</div>
-                       </div>
-                    </div>
-                    {/* decorative background element */}
-                    <div className="absolute top-10 -right-6 w-full h-full bg-indigo-200/50 rounded-2xl border border-indigo-200 rotate-3 z-0"></div>
-                 </div>
-              </div>
-           </div>
-        </section>
+/** Pill badge */
+function Pill({ children, light }: { children: React.ReactNode; light?: boolean }) {
+   return (
+      <div style={{
+         display: "inline-flex", alignItems: "center", gap: 6,
+         padding: "5px 12px", borderRadius: 20,
+         border: light ? "1px solid rgba(255,255,255,0.2)" : "1px solid #E2E8F0",
+         background: light ? "rgba(255,255,255,0.08)" : "#F8FAFC",
+         fontSize: 12.5, fontWeight: 500,
+         color: light ? "rgba(255,255,255,0.8)" : "#475569",
+         letterSpacing: "0.01em",
+      }}>
+         {children}
+      </div>
+   );
+}
 
-        {/* ── 5. Integration Callout ── */}
-        <section className="py-24 overflow-hidden">
-           <div className="container mx-auto px-4 max-w-[1000px] text-center">
-              <div className="bg-white border shadow-lg shadow-indigo-100/50 rounded-[40px] p-10 md:p-16 flex flex-col items-center">
-                 <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 max-w-2xl leading-tight">
-                    Use 11docs with the tools your team already knows
-                 </h2>
-                 <p className="text-lg text-gray-500 mb-10">Export seamlessly with one click.</p>
-                 
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-3xl">
-                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex flex-col items-center justify-center aspect-square gap-3 hover:-translate-y-1 transition-transform cursor-pointer">
-                       <FileText className="w-10 h-10 text-blue-600" />
-                       <span className="font-bold text-blue-900">Word</span>
-                    </div>
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex flex-col items-center justify-center aspect-square gap-3 hover:-translate-y-1 transition-transform cursor-pointer">
-                       <FileText className="w-10 h-10 text-emerald-600" />
-                       <span className="font-bold text-emerald-900">Excel</span>
-                    </div>
-                    <div className="bg-green-50 border border-green-100 rounded-2xl p-6 flex flex-col items-center justify-center aspect-square gap-3 hover:-translate-y-1 transition-transform cursor-pointer">
-                       <FileText className="w-10 h-10 text-green-600" />
-                       <span className="font-bold text-green-900">Docs</span>
-                    </div>
-                    <div className="bg-teal-50 border border-teal-100 rounded-2xl p-6 flex flex-col items-center justify-center aspect-square gap-3 hover:-translate-y-1 transition-transform cursor-pointer">
-                       <FileText className="w-10 h-10 text-teal-600" />
-                       <span className="font-bold text-teal-900">Sheets</span>
-                    </div>
-                 </div>
-                 
-                 <Button variant="link" className="text-indigo-600 font-bold text-lg mt-10 tracking-tight">
-                    Explore all 40+ integrations <ArrowRight className="w-5 h-5 ml-2" />
-                 </Button>
-              </div>
-           </div>
-        </section>
+/** Section label */
+function Label({ children, light }: { children: React.ReactNode; light?: boolean }) {
+   return (
+      <div style={{
+         fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
+         textTransform: "uppercase",
+         color: light ? "rgba(255,255,255,0.5)" : "#94A3B8",
+         marginBottom: 12,
+      }}>
+         {children}
+      </div>
+   );
+}
 
-        {/* ── 6. Alternating Features ── */}
-        <section className="py-24 bg-indigo-50/30">
-           <div className="container mx-auto px-4 max-w-[1200px]">
-              
-              <div className="text-center max-w-3xl mx-auto mb-20">
-                 <h2 className="text-3xl md:text-5xl font-bold text-indigo-600 mb-6 leading-tight">
-                    We don't want to just shave hours off your workflow, we want to revolutionize it.
-                 </h2>
-              </div>
+/** Document thumbnail mockup */
+function DocMockup({
+   title, type, primaryColor, accentColor, lines, size = "md",
+}: {
+   title: string; type: string;
+   primaryColor: string; accentColor: string;
+   lines: number[]; size?: "sm" | "md" | "lg";
+}) {
+   const w = size === "lg" ? 260 : size === "md" ? 200 : 140;
+   const fontSize = size === "lg" ? 1 : size === "md" ? 0.8 : 0.65;
 
-              {/* Feature 1 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-32">
-                 <div className="order-2 lg:order-1 relative">
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 overflow-hidden">
-                       <div className="bg-[#f8f9fa] rounded-xl h-[400px] flex items-center justify-center relative overflow-hidden">
-                          {/* Fake UI component */}
-                          <div className="w-[80%] h-[120%] bg-white shadow-lg border border-gray-100 rotate-[-5deg] p-6 flex flex-col">
-                             <div className="h-6 w-1/3 bg-indigo-100 rounded mb-4"></div>
-                             <div className="h-2 w-full bg-gray-100 rounded mb-2"></div>
-                             <div className="h-2 w-5/6 bg-gray-100 rounded mb-8"></div>
-                             
-                             <div className="flex gap-4 mb-4">
-                               <div className="w-12 h-12 rounded-full bg-orange-100"></div>
-                               <div className="flex-1 mt-2 space-y-2">
-                                <div className="h-2 w-1/4 bg-gray-300 rounded"></div>
-                                <div className="h-2 w-3/4 bg-gray-100 rounded"></div>
-                               </div>
-                             </div>
-                             <div className="flex gap-4">
-                               <div className="w-12 h-12 rounded-full bg-teal-100"></div>
-                               <div className="flex-1 mt-2 space-y-2">
-                                <div className="h-2 w-1/4 bg-gray-300 rounded"></div>
-                                <div className="h-2 w-1/2 bg-gray-100 rounded"></div>
-                               </div>
-                             </div>
-                          </div>
-                          
-                          {/* Top UI element floating */}
-                          <div className="absolute top-10 -right-4 bg-white p-4 rounded-xl shadow-xl w-48 border border-gray-100">
-                             <div className="text-xs font-bold text-emerald-600 flex items-center mb-2"><Check className="w-3 h-3 mr-1" /> Styles locked</div>
-                             <div className="h-1.5 w-full bg-gray-100 rounded mb-1.5"></div>
-                             <div className="h-1.5 w-4/5 bg-gray-100 rounded"></div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="order-1 lg:order-2 space-y-6">
-                    <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-6">
-                       <PenTool className="w-7 h-7 text-indigo-600" />
-                    </div>
-                    <h3 className="text-3xl font-bold text-slate-900">Total brand compliance</h3>
-                    <p className="text-lg text-gray-600 leading-relaxed">
-                       Lock in your colors, fonts, and logos so your team can't go rogue. Empower them to create documents while never compromising your brand identity.
-                    </p>
-                    <ul className="space-y-4 pt-4">
-                       <li className="flex items-start gap-3">
-                          <div className="mt-1 bg-indigo-100 rounded-full p-1"><Check className="w-4 h-4 text-indigo-600" /></div>
-                          <span className="text-gray-700 font-medium">Dynamic brand kits synced across all templates</span>
-                       </li>
-                       <li className="flex items-start gap-3">
-                          <div className="mt-1 bg-indigo-100 rounded-full p-1"><Check className="w-4 h-4 text-indigo-600" /></div>
-                          <span className="text-gray-700 font-medium">Locked header/footer constraints</span>
-                       </li>
-                       <li className="flex items-start gap-3">
-                          <div className="mt-1 bg-indigo-100 rounded-full p-1"><Check className="w-4 h-4 text-indigo-600" /></div>
-                          <span className="text-gray-700 font-medium">Approval workflows before export</span>
-                       </li>
-                    </ul>
-                 </div>
-              </div>
-
-              {/* Feature 2 */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                 <div className="space-y-6">
-                    <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-                       <Zap className="w-7 h-7 text-purple-600" />
-                    </div>
-                    <h3 className="text-3xl font-bold text-slate-900">Create once, use everywhere</h3>
-                    <p className="text-lg text-gray-600 leading-relaxed">
-                       Stop duplicating work. Design your master template inside our intuitive builder and immediately make it available to the entire suite of productivity tools.
-                    </p>
-                    <ul className="space-y-4 pt-4">
-                       <li className="flex gap-3 text-gray-700 font-medium border-l-2 border-indigo-600 pl-4">
-                          Convert to Word instantly
-                       </li>
-                       <li className="flex gap-3 text-gray-700 font-medium border-l-2 border-gray-200 pl-4 hover:border-indigo-400 transition-colors">
-                          Native Google Docs formats
-                       </li>
-                       <li className="flex gap-3 text-gray-700 font-medium border-l-2 border-gray-200 pl-4 hover:border-indigo-400 transition-colors">
-                          Spreadsheet auto-formulas
-                       </li>
-                    </ul>
-                 </div>
-                 <div className="relative border border-gray-100 p-2 bg-white rounded-2xl shadow-xl">
-                    <div className="bg-indigo-50 rounded-xl h-[400px] flex items-center justify-center relative overflow-hidden">
-                       <div className="flex gap-6 animate-pulse-slow px-8">
-                         <div className="bg-white w-40 h-56 rounded-lg shadow border border-indigo-100 flex flex-col p-4 opacity-80 transform -translate-y-4">
-                           <div className="w-8 h-8 rounded-full bg-blue-100 mb-2"></div>
-                           <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
-                           <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                         </div>
-                         <div className="bg-white w-48 h-64 rounded-lg shadow-xl border border-indigo-200 flex flex-col p-4 relative z-10">
-                           <div className="w-12 h-12 rounded-full bg-indigo-600 mb-4 mx-auto flex items-center justify-center text-white font-bold">11</div>
-                           <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
-                           <div className="h-2 bg-gray-100 rounded w-full mb-1"></div>
-                           <div className="h-2 bg-gray-100 rounded w-full mb-1"></div>
-                           <div className="h-2 bg-gray-100 rounded w-4/5 mb-8"></div>
-                           <div className="mt-auto h-8 bg-indigo-50 rounded border border-indigo-100"></div>
-                         </div>
-                         <div className="bg-white w-40 h-56 rounded-lg shadow border border-indigo-100 flex flex-col p-4 opacity-80 transform translate-y-4">
-                           <div className="w-8 h-8 rounded bg-emerald-100 mb-2"></div>
-                           <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
-                           <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                         </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </section>
-
-        {/* ── 7. Pricing Intro ── */}
-        <section className="py-24 bg-indigo-700 text-white">
-           <div className="container mx-auto px-4 max-w-[1200px]">
-              <div className="text-center mb-16">
-                 <h2 className="text-3xl md:text-5xl font-bold mb-4">Start for free.<br />Scale as you grow.</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-                 
-                 {[
-                   { name: "Starter", price: "$0", desc: "For individuals", btn: "Start now", active: false },
-                   { name: "Professional", price: "$25/mo", desc: "For small teams", btn: "Start Free Trial", active: true },
-                   { name: "Business", price: "$65/mo", desc: "For growing orgs", btn: "Start Free Trial", active: false },
-                   { name: "Enterprise", price: "Custom", desc: "For scale", btn: "Contact Sales", active: false },
-                 ].map(plan => (
-                   <div key={plan.name} className={`bg-white rounded-2xl p-8 flex flex-col shadow-xl ${plan.active ? 'ring-4 ring-indigo-300 transform md:-translate-y-2' : ''}`}>
-                      <h4 className="text-indigo-600 font-bold text-lg mb-1">{plan.name}</h4>
-                      <p className="text-gray-500 text-sm mb-6">{plan.desc}</p>
-                      <div className="text-3xl font-extrabold text-slate-900 mb-6">{plan.price}</div>
-                      <Button className={`w-full py-6 rounded-xl font-bold mt-auto ${plan.active ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}>
-                         {plan.btn}
-                      </Button>
-                      {plan.active && <div className="text-center text-xs text-gray-500 mt-4 leading-tight">Most popular for agencies</div>}
-                   </div>
-                 ))}
-                 
-              </div>
-           </div>
-        </section>
-
-        {/* ── 8. Templates Previews ── */}
-        <section className="py-24 overflow-hidden relative">
-           <div className="container mx-auto px-4 max-w-[1200px]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                 <div className="relative">
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-4">
-                          <div className="bg-gray-100 aspect-[3/4] rounded-xl overflow-hidden border border-gray-200">
-                            <div className="h-16 bg-blue-800 w-full"></div>
-                            <div className="p-4 space-y-2"><div className="h-2 bg-gray-200 w-full"/><div className="h-2 bg-gray-200 w-5/6"/></div>
-                          </div>
-                          <div className="bg-gray-100 aspect-[4/3] rounded-xl overflow-hidden border border-gray-200 relative">
-                             <div className="absolute top-4 left-4 text-xs font-bold bg-white px-2 py-1 rounded">Spreadsheet</div>
-                          </div>
-                       </div>
-                       <div className="space-y-4 mt-12">
-                           <div className="bg-indigo-900 aspect-square rounded-xl overflow-hidden border border-gray-200 relative flex items-center justify-center">
-                             <div className="w-16 h-16 rounded-full bg-white opacity-20"></div>
-                             <div className="absolute bottom-4 center text-xs font-bold text-white px-2 py-1 rounded">Letterhead</div>
-                          </div>
-                          <div className="bg-gray-100 aspect-[3/4] rounded-xl overflow-hidden border border-gray-200 hover:scale-105 transition-transform">
-                             <div className="h-full border-4 border-indigo-600 bg-white m-2 rounded">
-                                <div className="p-4"><div className="w-8 h-8 rounded bg-indigo-600 mb-8"></div><div className="h-2 bg-gray-200 w-full mb-2"/><div className="h-2 bg-gray-200 w-full"/></div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="space-y-6">
-                    <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-                       One template doesn't fit all: try it to see for yourself
-                    </h2>
-                    <p className="text-lg text-gray-600">
-                       Browse an extensive, ever-growing catalog of professionally designed templates tailored for a myriad of industries. Customize them to fit your exact brand guidelines in clicks.
-                    </p>
-                    <Link href="/templates" className="inline-block mt-4">
-                      <Button className="bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-600 rounded-full px-8 py-6 font-bold text-lg">
-                        View all templates
-                      </Button>
-                    </Link>
-                 </div>
-              </div>
-           </div>
-        </section>
-
-        {/* ── 9. Roles / Use Cases ── */}
-        <section className="py-24 bg-gray-50 border-t border-gray-200">
-           <div className="container mx-auto px-4 max-w-[1200px]">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                 
-                 <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-32 self-start">
-                    <h2 className="text-4xl font-bold text-slate-900 leading-tight mb-4">
-                       For every team: a high-performing document machine
-                    </h2>
-                    <p className="text-lg text-gray-600">
-                       Whether you're selling a vision or sending an invoice, 11docs scales directly to your team's unique requirements.
-                    </p>
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-8 py-6 font-bold text-lg mt-4">
-                       Get started
-                    </Button>
-                 </div>
-
-                 <div className="lg:col-span-7 space-y-6">
-                    {/* Role Card 1 */}
-                    <div className="bg-white rounded-2xl p-8 lg:p-10 border border-gray-200 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all cursor-pointer group">
-                       <div className="flex items-center gap-4 mb-6">
-                          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                             <Layers className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-slate-900">For Agencies</h3>
-                       </div>
-                       <p className="text-gray-600 mb-6 leading-relaxed">
-                          Manage multiple client brands from a single interface. Toggle brand kits instantly to generate proposals, reports, and onboarding materials exactly in your client's style.
-                       </p>
-                       <span className="text-indigo-600 font-bold group-hover:underline flex items-center">Learn more <ArrowRight className="w-4 h-4 ml-1" /></span>
-                    </div>
-
-                    {/* Role Card 2 */}
-                    <div className="bg-white rounded-2xl p-8 lg:p-10 border border-gray-200 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all cursor-pointer group">
-                       <div className="flex items-center gap-4 mb-6">
-                          <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                             <MonitorSmartphone className="w-6 h-6 text-emerald-600" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-slate-900">For Marketing</h3>
-                       </div>
-                       <p className="text-gray-600 mb-6 leading-relaxed">
-                          Empower sales, support, and success teams to generate their own branded collateral without needing to submit requests to the design queue. Total brand control, decentralized generation.
-                       </p>
-                       <span className="text-indigo-600 font-bold group-hover:underline flex items-center">Learn more <ArrowRight className="w-4 h-4 ml-1" /></span>
-                    </div>
-
-                 </div>
-
-              </div>
-           </div>
-        </section>
-
-        {/* ── 10. Bottom CTA (Dark Purple) ── */}
-        <section className="bg-slate-900 text-white py-24 border-b border-gray-800">
-           <div className="container mx-auto px-4 max-w-[1000px]">
-              <div className="flex flex-col md:flex-row items-center gap-12 bg-[#1a2035] rounded-3xl p-10 lg:p-16 border border-slate-700">
-                 <div className="hidden md:block w-48 h-48 bg-slate-800 rounded-xl relative shadow-2xl p-4">
-                    <div className="bg-indigo-600 w-full h-8 rounded-md mb-4 opacity-50"></div>
-                    <div className="h-3 bg-slate-600 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-slate-600 rounded w-5/6 mb-8"></div>
-                    <div className="absolute -bottom-4 -right-4 bg-emerald-500 text-white px-3 py-1 text-xs font-bold rounded-full">Convert</div>
-                 </div>
-                 <div className="flex-1 text-center md:text-left space-y-6">
-                    <h2 className="text-3xl lg:text-4xl font-bold leading-tight">
-                       Ready to start? <br/>Build beautiful document templates. Fast.
-                    </h2>
-                    <Button className="bg-[#fc5c65] hover:bg-[#eb4d55] text-white rounded-full px-8 py-6 text-lg font-bold">
-                       Try 11docs for free
-                    </Button>
-                 </div>
-              </div>
-           </div>
-        </section>
-
-      </main>
-
-      {/* ── Footer (Match Templates Page) ── */}
-      <footer className="bg-white pt-20 pb-10">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10 mb-16">
-            <div className="lg:col-span-2 pr-8">
-              <Link href="/" className="flex items-center gap-2 mb-6">
-                <div className="bg-indigo-600 p-1.5 rounded-lg">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-bold text-xl tracking-tight text-slate-900">11docs</span>
-              </Link>
-              <p className="text-[15px] text-gray-500 mb-8 max-w-sm leading-relaxed">
-                The most intelligent way to create, manage, and share beautifully designed document templates for your brand.
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-indigo-600 hover:text-indigo-600 transition-colors cursor-pointer">in</div>
-                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-indigo-600 hover:text-indigo-600 transition-colors cursor-pointer">tw</div>
-                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-indigo-600 hover:text-indigo-600 transition-colors cursor-pointer">ig</div>
-              </div>
-            </div>
+   return (
+      <div style={{
+         width: w,
+         background: "#fff",
+         borderRadius: 8,
+         overflow: "hidden",
+         boxShadow: "0 8px 40px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06)",
+         border: "1px solid rgba(0,0,0,0.06)",
+         flexShrink: 0,
+      }}>
+         {/* Header */}
+         <div style={{
+            background: primaryColor, padding: `${10 * fontSize * 1.6}px ${14 * fontSize * 1.6}px`,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+         }}>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-5 text-[15px]">Templates</h4>
-              <ul className="space-y-4 text-[15px] text-gray-500">
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Letterheads</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Spreadsheets</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Presentations</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Brand Kits</Link></li>
-              </ul>
+               <div style={{
+                  fontSize: 10 * fontSize * 1.8, fontWeight: 700, color: "#fff",
+                  fontFamily: "'Fraunces', Georgia, serif",
+               }}>{title}</div>
+               <div style={{ fontSize: 7 * fontSize * 1.8, color: accentColor, marginTop: 1 }}>{type}</div>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-5 text-[15px]">Product</h4>
-              <ul className="space-y-4 text-[15px] text-gray-500">
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Features</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Pricing</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Customers</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Integrations</Link></li>
-              </ul>
+            <div style={{
+               width: 22 * fontSize * 1.5, height: 22 * fontSize * 1.5,
+               borderRadius: 5, background: accentColor,
+               display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+               <FileText size={11 * fontSize * 1.5} color={primaryColor} />
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-5 text-[15px]">Resources</h4>
-              <ul className="space-y-4 text-[15px] text-gray-500">
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Blog</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Help Center</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Community</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Contact Support</Link></li>
-              </ul>
+         </div>
+         <div style={{ height: 2, background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})` }} />
+         <div style={{ padding: `${10 * fontSize * 1.6}px ${12 * fontSize * 1.6}px`, display: "flex", flexDirection: "column", gap: 4 * fontSize * 1.4 }}>
+            {lines.map((w, i) => (
+               <div key={i} style={{
+                  height: i === 0 ? 5 * fontSize * 1.5 : 3 * fontSize * 1.5,
+                  width: `${w}%`,
+                  background: i === 0 ? primaryColor : (i % 3 === 0 ? "#E2E8F0" : "#F1F5F9"),
+                  borderRadius: 2, opacity: i === 0 ? 0.7 : 1,
+               }} />
+            ))}
+            <div style={{
+               marginTop: 4 * fontSize * 1.2,
+               height: 6 * fontSize * 1.5, width: "38%",
+               background: primaryColor, borderRadius: 2, opacity: 0.85,
+            }} />
+         </div>
+      </div>
+   );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SECTIONS
+══════════════════════════════════════════════════════════════ */
+
+/** NAVBAR */
+function Navbar() {
+   const [scrolled, setScrolled] = useState(false);
+   const [menuOpen, setMenuOpen] = useState(false);
+
+   useEffect(() => {
+      const onScroll = () => setScrolled(window.scrollY > 20);
+      window.addEventListener("scroll", onScroll);
+      return () => window.removeEventListener("scroll", onScroll);
+   }, []);
+
+   return (
+      <nav style={{
+         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+         transition: "all 0.2s",
+         background: scrolled ? "rgba(255,255,255,0.95)" : "transparent",
+         backdropFilter: scrolled ? "blur(12px)" : "none",
+         borderBottom: scrolled ? "0.5px solid #E2E8F0" : "none",
+      }}>
+         <div style={{
+            maxWidth: 1120, margin: "0 auto",
+            padding: "0 24px", height: 64,
+            display: "flex", alignItems: "center", gap: 40,
+         }}>
+            {/* Logo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
+               <div style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  background: "linear-gradient(135deg, #1D4ED8, #3B82F6)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+               }}>
+                  <FileText size={14} color="#fff" />
+               </div>
+               <span style={{
+                  fontSize: 16, fontWeight: 700, color: "#0F172A",
+                  fontFamily: "'Fraunces', Georgia, serif", letterSpacing: "-0.02em",
+               }}>DocCraft</span>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-5 text-[15px]">Company</h4>
-              <ul className="space-y-4 text-[15px] text-gray-500">
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">About Us</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Careers</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-indigo-600 transition-colors">Terms of Service</Link></li>
-              </ul>
+
+            {/* Nav links */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
+               {NAV_LINKS.map((link) => (
+                  <button key={link} style={{
+                     background: "none", border: "none", cursor: "pointer",
+                     padding: "6px 12px", borderRadius: 7,
+                     fontSize: 13.5, color: "#475569", fontFamily: "inherit",
+                     transition: "color 0.1s",
+                  }}
+                     onMouseEnter={(e) => (e.currentTarget.style.color = "#0F172A")}
+                     onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+                  >{link}</button>
+               ))}
             </div>
-          </div>
-          <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[14px] text-gray-400">© 2026 11docs Inc. All rights reserved.</p>
-            <div className="flex items-center gap-6 text-[14px] text-gray-400">
-              <span>Status: All systems operational</span>
+
+            {/* CTA */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+               <button style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 13.5, color: "#475569", fontFamily: "inherit", padding: "6px 12px",
+               }}>Log in</button>
+               <button style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "8px 18px", background: "#0F172A",
+                  border: "none", borderRadius: 9, cursor: "pointer",
+                  fontSize: 13.5, fontWeight: 500, color: "#fff", fontFamily: "inherit",
+                  transition: "background 0.15s",
+               }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#1D4ED8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#0F172A")}
+               >
+                  Get started free <ArrowRight size={13} />
+               </button>
             </div>
-          </div>
-        </div>
+         </div>
+      </nav>
+   );
+}
+
+/** HERO */
+function Hero() {
+   return (
+      <section style={{
+         minHeight: "100vh",
+         background: "#F8FAFC",
+         display: "flex", flexDirection: "column",
+         alignItems: "center",
+         paddingTop: 140,
+         paddingBottom: 80,
+         position: "relative",
+         overflow: "hidden",
+      }}>
+         {/* Background blobs */}
+         <div style={{
+            position: "absolute", top: -80, left: "50%",
+            transform: "translateX(-50%)",
+            width: 900, height: 600,
+            background: "radial-gradient(ellipse at 50% 40%, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.07) 40%, transparent 70%)",
+            pointerEvents: "none",
+         }} />
+         <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+            backgroundImage: `radial-gradient(circle, #CBD5E1 1px, transparent 1px)`,
+            backgroundSize: "28px 28px",
+            opacity: 0.35,
+            pointerEvents: "none",
+         }} />
+
+         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px", textAlign: "center", position: "relative", zIndex: 1 }}>
+            {/* Badge */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+               <Pill>
+                  <Sparkles size={11} color="#F59E0B" />
+                  Brand-first document creation
+               </Pill>
+            </div>
+
+            {/* Headline */}
+            <h1 style={{
+               fontSize: "clamp(40px, 6vw, 68px)",
+               fontWeight: 800, lineHeight: 1.08,
+               letterSpacing: "-0.04em", color: "#0F172A",
+               fontFamily: "'Fraunces', Georgia, serif",
+               marginBottom: 22,
+            }}>
+               Documents that look<br />
+               <span style={{
+                  background: "linear-gradient(135deg, #1D4ED8 0%, #7C3AED 100%)",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+               }}>
+                  like your brand.
+               </span>
+            </h1>
+
+            {/* Sub */}
+            <p style={{
+               fontSize: 18, color: "#64748B", lineHeight: 1.75,
+               maxWidth: 560, margin: "0 auto 36px",
+               fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}>
+               Build a brand kit once. Then create invoices, proposals, SLAs and
+               more with your logo, colors, and fonts applied automatically.
+            </p>
+
+            {/* CTAs */}
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+               <button style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "14px 28px", background: "#0F172A",
+                  border: "none", borderRadius: 12, cursor: "pointer",
+                  fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
+                  boxShadow: "0 4px 20px rgba(15,23,42,0.25)",
+                  transition: "all 0.15s",
+               }}
+                  onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
+                  onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
+               >
+                  Start for free <ArrowRight size={16} />
+               </button>
+               <button style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "14px 28px", background: "#fff",
+                  border: "1.5px solid #E2E8F0", borderRadius: 12, cursor: "pointer",
+                  fontSize: 15, fontWeight: 500, color: "#0F172A", fontFamily: "'DM Sans', system-ui, sans-serif",
+                  transition: "all 0.15s",
+               }}
+                  onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#CBD5E1"); (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)"); }}
+                  onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.boxShadow = "none"); }}
+               >
+                  See templates
+               </button>
+            </div>
+
+            {/* Trust line */}
+            <div style={{
+               display: "flex", alignItems: "center", justifyContent: "center",
+               gap: 6, marginTop: 28, fontSize: 13, color: "#94A3B8",
+               fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}>
+               {["No credit card required", "Free forever plan", "2,400+ professionals"].map((t, i) => (
+                  <React.Fragment key={t}>
+                     {i > 0 && <span style={{ opacity: 0.4 }}>·</span>}
+                     <span>{t}</span>
+                  </React.Fragment>
+               ))}
+            </div>
+         </div>
+
+         {/* Floating document cards */}
+         <div style={{
+            position: "relative", zIndex: 1,
+            width: "100%", maxWidth: 1000, margin: "64px auto 0",
+            padding: "0 24px",
+            display: "flex", justifyContent: "center", gap: 24, alignItems: "flex-start",
+            flexWrap: "nowrap",
+         }}>
+            <div style={{ transform: "rotate(-4deg) translateY(20px)", animation: "floatA 6s ease-in-out infinite" }}>
+               <DocMockup title="Invoice #1241" type="Invoice · Acme Corp" primaryColor="#0C4A6E" accentColor="#38BDF8" lines={[85, 70, 90, 55, 75, 60]} size="md" />
+            </div>
+            <div style={{ transform: "translateY(0px)", animation: "floatB 7s ease-in-out infinite", zIndex: 2 }}>
+               <DocMockup title="Q3 Report 2024" type="Report · Acme Corp" primaryColor="#3B0764" accentColor="#C084FC" lines={[90, 72, 85, 60, 80, 55]} size="lg" />
+            </div>
+            <div style={{ transform: "rotate(4deg) translateY(20px)", animation: "floatC 5.5s ease-in-out infinite" }}>
+               <DocMockup title="Service Quote" type="Quotation · Acme Corp" primaryColor="#14532D" accentColor="#4ADE80" lines={[80, 65, 88, 50, 70, 60]} size="md" />
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** LOGO BAR */
+function LogoBar() {
+   return (
+      <section style={{
+         borderTop: "0.5px solid #E2E8F0", borderBottom: "0.5px solid #E2E8F0",
+         background: "#fff", padding: "24px 24px",
+      }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <p style={{
+               textAlign: "center", fontSize: 12, color: "#94A3B8",
+               fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+               marginBottom: 20, fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}>
+               Trusted by teams at
+            </p>
+            <div style={{
+               display: "flex", justifyContent: "center",
+               alignItems: "center", gap: 40, flexWrap: "wrap",
+            }}>
+               {LOGOS.map((name) => (
+                  <div key={name} style={{
+                     fontSize: 15, fontWeight: 700, color: "#CBD5E1",
+                     letterSpacing: "-0.02em",
+                     fontFamily: "'Fraunces', Georgia, serif",
+                     transition: "color 0.2s", cursor: "default",
+                  }}
+                     onMouseEnter={(e) => (e.currentTarget.style.color = "#94A3B8")}
+                     onMouseLeave={(e) => (e.currentTarget.style.color = "#CBD5E1")}
+                  >{name}</div>
+               ))}
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** BRAND SECTION (light) */
+function BrandSection() {
+   return (
+      <section style={{ background: "#fff", padding: "100px 24px" }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", alignItems: "center", gap: 80 }}>
+            {/* Left copy */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+               <Label>Your brand kit</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 700,
+                  color: "#0F172A", letterSpacing: "-0.03em", lineHeight: 1.15,
+                  fontFamily: "'Fraunces', Georgia, serif", marginBottom: 18,
+               }}>
+                  Set it once.<br />Use it everywhere.
+               </h2>
+               <p style={{
+                  fontSize: 16, color: "#64748B", lineHeight: 1.8,
+                  maxWidth: 440, marginBottom: 32,
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+               }}>
+                  Upload your logo, choose your brand colors and typography. From that
+                  moment on, every document you create inherits your identity — no copy-pasting,
+                  no reformatting.
+               </p>
+               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {["Logo + letterhead applied automatically", "Brand colors in every template", "Custom fonts across all documents", "Footer with your contact details"].map((f) => (
+                     <div key={f} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                           width: 20, height: 20, borderRadius: 6,
+                           background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                           <Check size={11} color="#1D4ED8" strokeWidth={2.5} />
+                        </div>
+                        <span style={{ fontSize: 14, color: "#374151", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{f}</span>
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            {/* Right mockup */}
+            <div style={{
+               flex: 1, minWidth: 0, display: "flex", justifyContent: "center",
+               position: "relative",
+            }}>
+               {/* Background glow */}
+               <div style={{
+                  position: "absolute", inset: -40,
+                  background: "radial-gradient(ellipse at center, rgba(29,78,216,0.08) 0%, transparent 70%)",
+                  pointerEvents: "none",
+               }} />
+               {/* Brand kit card */}
+               <div style={{
+                  background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16,
+                  padding: 24, width: 360,
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
+                  position: "relative", zIndex: 1,
+               }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 16 }}>Brand Kit — Acme Corp</div>
+                  {/* Logo mark */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, padding: "14px", background: "#0C4A6E", borderRadius: 10 }}>
+                     <div style={{ width: 40, height: 40, borderRadius: 8, background: "#38BDF8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#0C4A6E" }}>AC</div>
+                     <div>
+                        <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "'Fraunces', Georgia, serif" }}>Acme Corp</div>
+                        <div style={{ color: "#38BDF8", fontSize: 11 }}>Building tomorrow's solutions</div>
+                     </div>
+                  </div>
+                  {/* Color palette */}
+                  <div style={{ marginBottom: 16 }}>
+                     <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 8, fontWeight: 500 }}>Colors</div>
+                     <div style={{ display: "flex", gap: 8 }}>
+                        {["#0C4A6E", "#0369A1", "#38BDF8", "#F1F5F9"].map((c) => (
+                           <div key={c} style={{ flex: 1, height: 32, borderRadius: 6, background: c, border: "1px solid rgba(0,0,0,0.06)" }} />
+                        ))}
+                     </div>
+                  </div>
+                  {/* Fonts */}
+                  <div style={{ display: "flex", gap: 10 }}>
+                     <div style={{ flex: 1, padding: "10px", background: "#F8FAFC", borderRadius: 8, border: "0.5px solid #E2E8F0" }}>
+                        <div style={{ fontSize: 9, color: "#94A3B8", marginBottom: 3, fontWeight: 500 }}>HEADING</div>
+                        <div style={{ fontSize: 13, fontFamily: "'Fraunces', Georgia, serif", color: "#0F172A", fontWeight: 600 }}>Fraunces</div>
+                     </div>
+                     <div style={{ flex: 1, padding: "10px", background: "#F8FAFC", borderRadius: 8, border: "0.5px solid #E2E8F0" }}>
+                        <div style={{ fontSize: 9, color: "#94A3B8", marginBottom: 3, fontWeight: 500 }}>BODY</div>
+                        <div style={{ fontSize: 13, fontFamily: "'DM Sans', system-ui", color: "#0F172A", fontWeight: 500 }}>DM Sans</div>
+                     </div>
+                  </div>
+                  {/* Applied badge */}
+                  <div style={{
+                     marginTop: 14, padding: "8px 12px",
+                     background: "#ECFDF5", border: "0.5px solid #BBF7D0",
+                     borderRadius: 8, fontSize: 12, color: "#065F46",
+                     display: "flex", alignItems: "center", gap: 6,
+                  }}>
+                     <Check size={12} strokeWidth={2.5} />
+                     Applied to 18 documents
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** TEMPLATES SECTION (light bg) */
+function TemplatesSection() {
+   return (
+      <section style={{ background: "#F8FAFC", padding: "100px 24px" }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 56 }}>
+               <Label>80+ templates</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 700,
+                  color: "#0F172A", letterSpacing: "-0.03em",
+                  fontFamily: "'Fraunces', Georgia, serif", marginBottom: 14,
+               }}>
+                  Every document your business needs.
+               </h2>
+               <p style={{
+                  fontSize: 16, color: "#64748B", maxWidth: 500, margin: "0 auto",
+                  fontFamily: "'DM Sans', system-ui, sans-serif", lineHeight: 1.75,
+               }}>
+                  From financial documents to legal agreements — all pre-designed
+                  and ready for your brand.
+               </p>
+            </div>
+
+            {/* Category chips */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginBottom: 48 }}>
+               {TEMPLATE_CATEGORIES.map((cat) => (
+                  <div key={cat.label} style={{
+                     display: "flex", alignItems: "center", gap: 7,
+                     padding: "8px 16px", borderRadius: 20,
+                     background: "#fff", border: "1px solid #E2E8F0",
+                     fontSize: 13, fontWeight: 500, color: "#374151",
+                     cursor: "pointer", transition: "all 0.15s",
+                     fontFamily: "'DM Sans', system-ui, sans-serif",
+                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}
+                     onMouseEnter={(e) => {
+                        (e.currentTarget.style.borderColor) = cat.color;
+                        (e.currentTarget.style.background) = `${cat.color}0d`;
+                        (e.currentTarget.style.color) = cat.color;
+                     }}
+                     onMouseLeave={(e) => {
+                        (e.currentTarget.style.borderColor) = "#E2E8F0";
+                        (e.currentTarget.style.background) = "#fff";
+                        (e.currentTarget.style.color) = "#374151";
+                     }}
+                  >
+                     <span style={{ color: cat.color }}>{cat.icon}</span>
+                     {cat.label}
+                     <span style={{
+                        fontSize: 11, background: "#F1F5F9", color: "#64748B",
+                        borderRadius: 10, padding: "1px 7px", fontWeight: 500,
+                     }}>{cat.count}</span>
+                  </div>
+               ))}
+            </div>
+
+            {/* Floating docs row */}
+            <div style={{
+               display: "flex", gap: 20, justifyContent: "center", alignItems: "center",
+               overflow: "visible",
+            }}>
+               {[
+                  { title: "Invoice #3302", type: "Invoice", p: "#0C4A6E", a: "#38BDF8", lines: [85, 70, 90, 55, 75] },
+                  { title: "NDA Agreement", type: "Contract", p: "#881337", a: "#FB7185", lines: [80, 90, 65, 85, 55] },
+                  { title: "Project Proposal", type: "Proposal", p: "#7C2D12", a: "#FB923C", lines: [88, 72, 95, 60, 78] },
+                  { title: "Offer Letter", type: "HR", p: "#0F766E", a: "#2DD4BF", lines: [75, 88, 70, 92, 60] },
+                  { title: "Status Report", type: "Report", p: "#3B0764", a: "#C084FC", lines: [90, 65, 80, 55, 85] },
+               ].map((doc, i) => (
+                  <div key={i} style={{
+                     transform: i === 2 ? "scale(1.06)" : "scale(0.95)",
+                     transition: "transform 0.2s",
+                     zIndex: i === 2 ? 2 : 1,
+                  }}
+                     onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+                     onMouseLeave={(e) => (e.currentTarget.style.transform = i === 2 ? "scale(1.06)" : "scale(0.95)")}
+                  >
+                     <DocMockup
+                        title={doc.title} type={doc.type}
+                        primaryColor={doc.p} accentColor={doc.a}
+                        lines={doc.lines} size="sm"
+                     />
+                  </div>
+               ))}
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: 48 }}>
+               <button style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "12px 24px", border: "1.5px solid #E2E8F0",
+                  borderRadius: 10, background: "#fff", cursor: "pointer",
+                  fontSize: 14, fontWeight: 500, color: "#0F172A",
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  transition: "all 0.15s",
+               }}
+                  onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#1D4ED8"); (e.currentTarget.style.color = "#1D4ED8"); }}
+                  onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "#E2E8F0"); (e.currentTarget.style.color = "#0F172A"); }}
+               >
+                  Browse all templates <ArrowRight size={14} />
+               </button>
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** FEATURES — dark section */
+function FeaturesSection() {
+   return (
+      <section style={{
+         background: "#0B1120", padding: "100px 24px",
+         position: "relative", overflow: "hidden",
+      }}>
+         {/* Glow */}
+         <div style={{
+            position: "absolute", top: -100, left: "50%",
+            transform: "translateX(-50%)",
+            width: 800, height: 600,
+            background: "radial-gradient(ellipse at 50% 30%, rgba(29,78,216,0.2) 0%, rgba(124,58,237,0.12) 40%, transparent 70%)",
+            pointerEvents: "none",
+         }} />
+
+         <div style={{ maxWidth: 1120, margin: "0 auto", position: "relative", zIndex: 1 }}>
+            <div style={{ textAlign: "center", marginBottom: 60 }}>
+               <Label light>Why DocCraft</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 700,
+                  color: "#fff", letterSpacing: "-0.03em",
+                  fontFamily: "'Fraunces', Georgia, serif", marginBottom: 14,
+               }}>
+                  Designed for how<br />businesses actually work.
+               </h2>
+               <p style={{
+                  fontSize: 16, color: "rgba(255,255,255,0.5)", maxWidth: 480, margin: "0 auto",
+                  fontFamily: "'DM Sans', system-ui, sans-serif", lineHeight: 1.75,
+               }}>
+                  No learning curve. No design skills needed. Just your brand, applied professionally.
+               </p>
+            </div>
+
+            <div style={{
+               display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16,
+            }}>
+               {FEATURES.map((f, i) => (
+                  <div key={i} style={{
+                     background: "rgba(255,255,255,0.04)",
+                     border: "1px solid rgba(255,255,255,0.07)",
+                     borderRadius: 16, padding: "28px 30px",
+                     transition: "background 0.15s, border-color 0.15s",
+                     cursor: "default",
+                  }}
+                     onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)";
+                     }}
+                     onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                        (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                     }}
+                  >
+                     <div style={{
+                        width: 38, height: 38, borderRadius: 9,
+                        background: f.color, display: "flex", alignItems: "center",
+                        justifyContent: "center", color: f.accent,
+                        marginBottom: 18, border: `1px solid ${f.accent}33`,
+                     }}>
+                        {f.icon}
+                     </div>
+                     <div style={{
+                        fontSize: 17, fontWeight: 600, color: "#fff",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        letterSpacing: "-0.02em", marginBottom: 10,
+                     }}>{f.title}</div>
+                     <p style={{
+                        fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.8,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                     }}>{f.body}</p>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** HOW IT WORKS */
+function HowItWorks() {
+   return (
+      <section style={{ background: "#fff", padding: "100px 24px" }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 64 }}>
+               <Label>How it works</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 700,
+                  color: "#0F172A", letterSpacing: "-0.03em",
+                  fontFamily: "'Fraunces', Georgia, serif",
+               }}>
+                  From brand to document<br />in minutes.
+               </h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+               {STEPS.map((step, i) => (
+                  <div key={i} style={{
+                     padding: "28px 24px",
+                     borderLeft: i > 0 ? "1px solid #F1F5F9" : "none",
+                     position: "relative",
+                  }}>
+                     {/* Step number */}
+                     <div style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                        color: "#CBD5E1", marginBottom: 16,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                     }}>{step.num}</div>
+
+                     {/* Connector dot */}
+                     <div style={{
+                        position: "absolute", top: 0, left: i > 0 ? -5 : 0,
+                        width: 10, height: 10, borderRadius: "50%",
+                        background: i === 0 ? "#1D4ED8" : "#E2E8F0",
+                        border: i === 0 ? "2px solid #BFDBFE" : "none",
+                        display: i > 0 ? "block" : "none",
+                     }} />
+
+                     <div style={{
+                        fontSize: 16, fontWeight: 600, color: "#0F172A",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        letterSpacing: "-0.02em", marginBottom: 10,
+                     }}>{step.title}</div>
+                     <p style={{
+                        fontSize: 13.5, color: "#64748B", lineHeight: 1.75,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                     }}>{step.body}</p>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** TESTIMONIALS */
+function Testimonials() {
+   return (
+      <section style={{ background: "#F8FAFC", padding: "100px 24px" }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 56 }}>
+               <Label>What people say</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3vw, 40px)", fontWeight: 700,
+                  color: "#0F172A", letterSpacing: "-0.03em",
+                  fontFamily: "'Fraunces', Georgia, serif",
+               }}>
+                  Loved by teams who care<br />about their brand.
+               </h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+               {TESTIMONIALS.map((t, i) => (
+                  <div key={i} style={{
+                     background: "#fff", border: "1px solid #E2E8F0",
+                     borderRadius: 16, padding: "28px",
+                     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                     display: "flex", flexDirection: "column", gap: 20,
+                     transition: "box-shadow 0.15s",
+                  }}
+                     onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.08)")}
+                     onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)")}
+                  >
+                     {/* Stars */}
+                     <div style={{ display: "flex", gap: 3 }}>
+                        {[...Array(5)].map((_, j) => (
+                           <Star key={j} size={13} fill="#F59E0B" color="#F59E0B" />
+                        ))}
+                     </div>
+                     <p style={{
+                        fontSize: 14.5, color: "#374151", lineHeight: 1.8, flex: 1,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        fontStyle: "italic",
+                     }}>
+                        "{t.quote}"
+                     </p>
+                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                           width: 36, height: 36, borderRadius: "50%",
+                           background: t.color, display: "flex", alignItems: "center",
+                           justifyContent: "center", color: "#fff",
+                           fontSize: 11, fontWeight: 700, flexShrink: 0,
+                        }}>{t.initials}</div>
+                        <div>
+                           <div style={{ fontSize: 13.5, fontWeight: 600, color: "#0F172A", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{t.name}</div>
+                           <div style={{ fontSize: 12, color: "#94A3B8", fontFamily: "'DM Sans', system-ui, sans-serif" }}>{t.role}</div>
+                        </div>
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** PRICING */
+function Pricing() {
+   const plans = [
+      {
+         name: "Free",
+         price: "$0",
+         per: "forever",
+         color: "#64748B",
+         features: ["1 brand kit", "10 documents/month", "20 templates", "PDF export"],
+         cta: "Start free",
+         highlight: false,
+      },
+      {
+         name: "Pro",
+         price: "$12",
+         per: "per month",
+         color: "#1D4ED8",
+         features: ["3 brand kits", "Unlimited documents", "80+ templates", "PDF & Word export", "Custom fonts", "Priority support"],
+         cta: "Start free trial",
+         highlight: true,
+      },
+      {
+         name: "Team",
+         price: "$29",
+         per: "per month",
+         color: "#0F172A",
+         features: ["Unlimited brand kits", "Unlimited documents", "All templates", "Team sharing", "Admin dashboard", "SSO / SAML"],
+         cta: "Contact us",
+         highlight: false,
+      },
+   ];
+
+   return (
+      <section style={{ background: "#0B1120", padding: "100px 24px", position: "relative", overflow: "hidden" }}>
+         <div style={{
+            position: "absolute", inset: 0,
+            backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)`,
+            backgroundSize: "28px 28px",
+         }} />
+         <div style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 1 }}>
+            <div style={{ textAlign: "center", marginBottom: 56 }}>
+               <Label light>Pricing</Label>
+               <h2 style={{
+                  fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 700,
+                  color: "#fff", letterSpacing: "-0.03em",
+                  fontFamily: "'Fraunces', Georgia, serif",
+               }}>
+                  Simple, honest pricing.
+               </h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, alignItems: "start" }}>
+               {plans.map((plan, i) => (
+                  <div key={i} style={{
+                     background: plan.highlight ? "#fff" : "rgba(255,255,255,0.04)",
+                     border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.08)",
+                     borderRadius: 16, padding: "28px 26px",
+                     transform: plan.highlight ? "scale(1.04)" : "none",
+                     boxShadow: plan.highlight ? "0 20px 60px rgba(0,0,0,0.3)" : "none",
+                     position: "relative",
+                  }}>
+                     {plan.highlight && (
+                        <div style={{
+                           position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+                           background: "#1D4ED8", color: "#fff",
+                           fontSize: 11, fontWeight: 700, padding: "4px 14px",
+                           borderRadius: 20, letterSpacing: "0.06em",
+                           fontFamily: "'DM Sans', system-ui, sans-serif",
+                        }}>MOST POPULAR</div>
+                     )}
+
+                     <div style={{ marginBottom: 20 }}>
+                        <div style={{
+                           fontSize: 13, fontWeight: 600, color: plan.highlight ? "#64748B" : "rgba(255,255,255,0.4)",
+                           marginBottom: 8, fontFamily: "'DM Sans', system-ui, sans-serif",
+                           letterSpacing: "0.04em", textTransform: "uppercase",
+                        }}>{plan.name}</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                           <span style={{
+                              fontSize: 36, fontWeight: 700, color: plan.highlight ? "#0F172A" : "#fff",
+                              fontFamily: "'Fraunces', Georgia, serif", letterSpacing: "-0.04em",
+                           }}>{plan.price}</span>
+                           <span style={{
+                              fontSize: 13, color: plan.highlight ? "#94A3B8" : "rgba(255,255,255,0.3)",
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                           }}>/ {plan.per}</span>
+                        </div>
+                     </div>
+
+                     <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                        {plan.features.map((f) => (
+                           <div key={f} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                              <Check size={13} color={plan.highlight ? "#1D4ED8" : "#4ADE80"} strokeWidth={2.5} />
+                              <span style={{
+                                 fontSize: 13.5, color: plan.highlight ? "#374151" : "rgba(255,255,255,0.65)",
+                                 fontFamily: "'DM Sans', system-ui, sans-serif",
+                              }}>{f}</span>
+                           </div>
+                        ))}
+                     </div>
+
+                     <button style={{
+                        width: "100%", height: 42,
+                        background: plan.highlight ? "#0F172A" : "rgba(255,255,255,0.08)",
+                        border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.12)",
+                        borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: 500,
+                        color: "#fff", fontFamily: "'DM Sans', system-ui, sans-serif",
+                        transition: "all 0.15s",
+                     }}
+                        onMouseEnter={(e) => {
+                           if (plan.highlight) (e.currentTarget.style.background = "#1D4ED8");
+                           else (e.currentTarget.style.background = "rgba(255,255,255,0.13)");
+                        }}
+                        onMouseLeave={(e) => {
+                           if (plan.highlight) (e.currentTarget.style.background = "#0F172A");
+                           else (e.currentTarget.style.background = "rgba(255,255,255,0.08)");
+                        }}
+                     >{plan.cta}</button>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** CTA BANNER */
+function CTABanner() {
+   return (
+      <section style={{
+         background: "#fff", padding: "100px 24px",
+         textAlign: "center",
+      }}>
+         <div style={{ maxWidth: 600, margin: "0 auto" }}>
+            {/* Decorative icon */}
+            <div style={{
+               width: 56, height: 56, borderRadius: 16,
+               background: "linear-gradient(135deg, #1D4ED8, #7C3AED)",
+               display: "flex", alignItems: "center", justifyContent: "center",
+               margin: "0 auto 28px", boxShadow: "0 8px 30px rgba(29,78,216,0.25)",
+            }}>
+               <Sparkles size={24} color="#fff" />
+            </div>
+
+            <h2 style={{
+               fontSize: "clamp(30px, 4vw, 50px)", fontWeight: 800,
+               color: "#0F172A", letterSpacing: "-0.04em", lineHeight: 1.1,
+               fontFamily: "'Fraunces', Georgia, serif", marginBottom: 18,
+            }}>
+               Your brand deserves<br />better documents.
+            </h2>
+            <p style={{
+               fontSize: 16, color: "#64748B", lineHeight: 1.8,
+               marginBottom: 36, fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}>
+               Join 2,400+ professionals creating polished, on-brand documents in minutes.
+               Start free — no credit card needed.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+               <button style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "14px 32px", background: "#0F172A",
+                  border: "none", borderRadius: 12, cursor: "pointer",
+                  fontSize: 15, fontWeight: 600, color: "#fff",
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  boxShadow: "0 4px 20px rgba(15,23,42,0.2)",
+                  transition: "all 0.15s",
+               }}
+                  onMouseEnter={(e) => { (e.currentTarget.style.background = "#1D4ED8"); (e.currentTarget.style.transform = "translateY(-1px)"); }}
+                  onMouseLeave={(e) => { (e.currentTarget.style.background = "#0F172A"); (e.currentTarget.style.transform = "none"); }}
+               >
+                  Get started free <ArrowRight size={15} />
+               </button>
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/** FOOTER */
+function Footer() {
+   const cols = [
+      { title: "Product", links: ["Templates", "Brand Kit", "Pricing", "Changelog"] },
+      { title: "Resources", links: ["Documentation", "Blog", "Customer Stories", "Status"] },
+      { title: "Company", links: ["About", "Careers", "Contact", "Privacy"] },
+   ];
+
+   return (
+      <footer style={{
+         background: "#0B1120", borderTop: "1px solid rgba(255,255,255,0.06)",
+         padding: "60px 24px 40px",
+      }}>
+         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <div style={{ display: "flex", gap: 80, marginBottom: 48, flexWrap: "wrap" }}>
+               {/* Brand */}
+               <div style={{ flex: "0 0 220px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+                     <div style={{
+                        width: 28, height: 28, borderRadius: 7,
+                        background: "linear-gradient(135deg, #1D4ED8, #3B82F6)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                     }}>
+                        <FileText size={14} color="#fff" />
+                     </div>
+                     <span style={{
+                        fontSize: 16, fontWeight: 700, color: "#fff",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                     }}>DocCraft</span>
+                  </div>
+                  <p style={{
+                     fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.8,
+                     fontFamily: "'DM Sans', system-ui, sans-serif",
+                  }}>
+                     Brand-first document creation for modern teams.
+                  </p>
+               </div>
+
+               {/* Link columns */}
+               {cols.map((col) => (
+                  <div key={col.title} style={{ flex: "1 0 120px" }}>
+                     <div style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                        color: "rgba(255,255,255,0.3)", textTransform: "uppercase",
+                        marginBottom: 16, fontFamily: "'DM Sans', system-ui, sans-serif",
+                     }}>{col.title}</div>
+                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {col.links.map((link) => (
+                           <span key={link} style={{
+                              fontSize: 13.5, color: "rgba(255,255,255,0.45)",
+                              cursor: "pointer", transition: "color 0.1s",
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                           }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+                           >{link}</span>
+                        ))}
+                     </div>
+                  </div>
+               ))}
+            </div>
+
+            <div style={{
+               borderTop: "1px solid rgba(255,255,255,0.06)",
+               paddingTop: 24,
+               display: "flex", justifyContent: "space-between", alignItems: "center",
+               flexWrap: "wrap", gap: 12,
+            }}>
+               <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                  © 2025 DocCraft. All rights reserved.
+               </span>
+               <div style={{ display: "flex", gap: 20 }}>
+                  {["Privacy Policy", "Terms of Service"].map((l) => (
+                     <span key={l} style={{
+                        fontSize: 12.5, color: "rgba(255,255,255,0.25)",
+                        cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif",
+                     }}>{l}</span>
+                  ))}
+               </div>
+            </div>
+         </div>
       </footer>
-    </div>
-  )
+   );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ROOT
+══════════════════════════════════════════════════════════════ */
+export default function LandingPage() {
+   return (
+      <>
+         <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'DM Sans', system-ui, sans-serif; }
+        @keyframes floatA {
+          0%, 100% { transform: rotate(-4deg) translateY(20px); }
+          50%       { transform: rotate(-4deg) translateY(6px); }
+        }
+        @keyframes floatB {
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-14px); }
+        }
+        @keyframes floatC {
+          0%, 100% { transform: rotate(4deg) translateY(20px); }
+          50%       { transform: rotate(4deg) translateY(8px); }
+        }
+      `}</style>
+
+         <Navbar />
+         <Hero />
+         <LogoBar />
+         <BrandSection />
+         <TemplatesSection />
+         <FeaturesSection />
+         <HowItWorks />
+         <Testimonials />
+         <Pricing />
+         <CTABanner />
+         <Footer />
+      </>
+   );
 }
