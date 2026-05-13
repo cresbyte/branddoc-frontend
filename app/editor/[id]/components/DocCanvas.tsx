@@ -16,250 +16,7 @@ const PAGE_HEIGHT_PX = 1056 // 11 inches  @ 96 dpi
 const PAGE_MARGIN_PX = 96 // 1-inch margin
 const PAGE_GAP_PX = 16 // gap between pages
 const CANVAS_H_PAD = 48 // horizontal padding around page
-const RULER_H = 22 // horizontal ruler height
-const RULER_V_W = 14 // vertical ruler width (left)
 const SCROLLBAR_W = 14 // custom scrollbar width
-
-/* Ruler: 8.5 inches, tick every 1/8 inch */
-const INCH_PX = 96
-const RULER_TOTAL_INCHES = 8.5
-const RULER_TICKS: { x: number; label: string; major: boolean }[] = []
-for (let i = 0; i <= RULER_TOTAL_INCHES * 8; i++) {
-  const inch = i / 8
-  const isMajor = i % 8 === 0
-  const isHalf = i % 4 === 0 && !isMajor
-  const isQuarter = i % 2 === 0 && !isMajor && !isHalf
-  if (isMajor || isHalf || isQuarter || true) {
-    RULER_TICKS.push({
-      x: inch * INCH_PX,
-      label:
-        isMajor && inch > 0 && inch < RULER_TOTAL_INCHES
-          ? String(Math.round(inch))
-          : "",
-      major: isMajor || isHalf,
-    })
-  }
-}
-
-/* ─────────────────────────────────────────────
-   HORIZONTAL RULER
-───────────────────────────────────────────── */
-function HorizontalRuler({ pageLeft }: { pageLeft: number }) {
-  // pageLeft = left edge of the page in the scroll container
-  const marginLeft = PAGE_MARGIN_PX
-  const marginRight = PAGE_MARGIN_PX
-  const textAreaWidth = PAGE_WIDTH_PX - marginLeft - marginRight
-
-  return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        left: 0,
-        zIndex: 20,
-        display: "flex",
-        flexDirection: "row",
-        height: RULER_H,
-        backgroundColor: "#f8f9fa",
-        borderBottom: "1px solid #e0e0e0",
-        userSelect: "none",
-        flexShrink: 0,
-        width: "100%",
-      }}
-    >
-      {/* Left gutter — same width as canvas left pad + vertical ruler */}
-      <div
-        style={{
-          width: pageLeft + RULER_V_W,
-          flexShrink: 0,
-          backgroundColor: "#f8f9fa",
-          borderRight: "none",
-        }}
-      />
-
-      {/* Left margin (greyed) */}
-      <div
-        style={{
-          width: marginLeft,
-          flexShrink: 0,
-          backgroundColor: "#e8eaed",
-          borderTop: "none",
-          position: "relative",
-        }}
-      />
-
-      {/* Active text area ruler */}
-      <div
-        style={{
-          width: textAreaWidth,
-          flexShrink: 0,
-          backgroundColor: "#f8f9fa",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <svg
-          width={textAreaWidth}
-          height={RULER_H}
-          style={{ display: "block" }}
-        >
-          {/* tick marks */}
-          {RULER_TICKS.filter((t) => t.x <= textAreaWidth + 2).map((t, i) => {
-            const h = t.major ? 8 : 5
-            return (
-              <line
-                key={i}
-                x1={t.x}
-                y1={RULER_H - h}
-                x2={t.x}
-                y2={RULER_H - 1}
-                stroke="#9aa0a6"
-                strokeWidth={t.major ? 1 : 0.75}
-              />
-            )
-          })}
-          {/* inch labels */}
-          {RULER_TICKS.filter((t) => t.label).map((t, i) => (
-            <text
-              key={i}
-              x={t.x}
-              y={8}
-              textAnchor="middle"
-              fontSize={9}
-              fill="#5f6368"
-              fontFamily="Arial, sans-serif"
-            >
-              {t.label}
-            </text>
-          ))}
-        </svg>
-      </div>
-
-      {/* Right margin (greyed) */}
-      <div
-        style={{
-          width: marginRight,
-          flexShrink: 0,
-          backgroundColor: "#e8eaed",
-        }}
-      />
-
-      {/* Blue indent handles on top of text area */}
-      {/* Left indent triangle */}
-      <div
-        style={{
-          position: "absolute",
-          left: pageLeft + RULER_V_W + marginLeft - 1,
-          top: 0,
-          width: 0,
-          height: 0,
-          borderLeft: "5px solid transparent",
-          borderRight: "5px solid transparent",
-          borderTop: "8px solid #1a73e8",
-          cursor: "col-resize",
-          zIndex: 5,
-        }}
-      />
-      {/* Right indent triangle */}
-      <div
-        style={{
-          position: "absolute",
-          right: marginRight + SCROLLBAR_W - 5,
-          top: 0,
-          width: 0,
-          height: 0,
-          borderLeft: "5px solid transparent",
-          borderRight: "5px solid transparent",
-          borderTop: "8px solid #1a73e8",
-          cursor: "col-resize",
-          zIndex: 5,
-        }}
-      />
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────
-   VERTICAL RULER  (left side, sticky)
-───────────────────────────────────────────── */
-function VerticalRuler({
-  scrollTop,
-  pageHeight,
-  pageGap,
-  numPages,
-}: {
-  scrollTop: number
-  pageHeight: number
-  pageGap: number
-  numPages: number
-}) {
-  const totalH = numPages * pageHeight + (numPages - 1) * pageGap
-  const tickEvery = INCH_PX / 8
-  const ticks: { y: number; major: boolean; label: string }[] = []
-  for (let i = 0; i * tickEvery <= totalH; i++) {
-    const inch = (i * tickEvery) / INCH_PX
-    const isMajor = i % 8 === 0
-    const isHalf = i % 4 === 0
-    ticks.push({
-      y: i * tickEvery,
-      major: isMajor || isHalf,
-      label: isMajor && inch > 0 ? String(Math.round(inch)) : "",
-    })
-  }
-
-  return (
-    <div
-      style={{
-        position: "sticky",
-        left: 0,
-        top: RULER_H,
-        width: RULER_V_W,
-        flexShrink: 0,
-        backgroundColor: "#f8f9fa",
-        borderRight: "1px solid #e0e0e0",
-        overflow: "hidden",
-        zIndex: 15,
-        alignSelf: "flex-start",
-        height: `calc(100vh - ${RULER_H}px)`,
-      }}
-    >
-      <svg
-        width={RULER_V_W}
-        height={totalH}
-        style={{ display: "block", transform: `translateY(-${scrollTop}px)` }}
-      >
-        {ticks.map((t, i) => {
-          const w = t.major ? 7 : 4
-          return (
-            <React.Fragment key={i}>
-              <line
-                x1={RULER_V_W - w}
-                y1={t.y}
-                x2={RULER_V_W - 1}
-                y2={t.y}
-                stroke="#9aa0a6"
-                strokeWidth={t.major ? 1 : 0.75}
-              />
-              {t.label && (
-                <text
-                  x={4}
-                  y={t.y + 3}
-                  textAnchor="middle"
-                  fontSize={7}
-                  fill="#5f6368"
-                  fontFamily="Arial, sans-serif"
-                  transform={`rotate(-90, 4, ${t.y})`}
-                >
-                  {t.label}
-                </text>
-              )}
-            </React.Fragment>
-          )
-        })}
-      </svg>
-    </div>
-  )
-}
 
 /* ─────────────────────────────────────────────
    PAGE SEPARATOR
@@ -512,11 +269,6 @@ export function DocsCanvas({ numPages = 2, children }: DocsCanvasProps) {
   const VERT_PAD = 24
   const scrollHeight = totalContentH + VERT_PAD * 2
 
-  // Center the page horizontally: canvas width = RULER_V_W + CANVAS_H_PAD + PAGE_WIDTH + CANVAS_H_PAD + SCROLLBAR_W
-  const canvasInnerW =
-    RULER_V_W + CANVAS_H_PAD + PAGE_WIDTH_PX + CANVAS_H_PAD + SCROLLBAR_W
-  const pageLeft = CANVAS_H_PAD // offset from canvas left (excluding ruler)
-
   const handleScroll = useCallback((top: number) => {
     setScrollTop(top)
     if (outerRef.current) outerRef.current.scrollTop = top
@@ -548,149 +300,127 @@ export function DocsCanvas({ numPages = 2, children }: DocsCanvasProps) {
         flexDirection: "column",
       }}
     >
-      {/* Horizontal ruler — sticky at top */}
-      <HorizontalRuler pageLeft={pageLeft} />
-
-      {/* Body row: vertical ruler + scrollable canvas */}
+      {/* Scrollable area (hidden native scrollbar) */}
       <div
+        ref={outerRef}
         style={{
-          display: "flex",
           flex: 1,
-          overflow: "hidden",
+          overflowY: "scroll",
+          overflowX: "auto",
+          scrollbarWidth: "none" /* Firefox */,
+          msOverflowStyle: "none" /* IE */,
           position: "relative",
         }}
       >
-        {/* Vertical ruler */}
-        <VerticalRuler
-          scrollTop={scrollTop}
-          pageHeight={PAGE_HEIGHT_PX}
-          pageGap={PAGE_GAP_PX}
-          numPages={numPages}
-        />
-
-        {/* Scrollable area (hidden native scrollbar) */}
+        {/* Inner content column — centers the pages */}
         <div
-          ref={outerRef}
           style={{
-            flex: 1,
-            overflowY: "scroll",
-            overflowX: "auto",
-            scrollbarWidth: "none" /* Firefox */,
-            msOverflowStyle: "none" /* IE */,
+            minWidth: PAGE_WIDTH_PX + CANVAS_H_PAD * 2,
+            paddingTop: VERT_PAD,
+            paddingBottom: VERT_PAD,
+            paddingLeft: CANVAS_H_PAD,
+            paddingRight: CANVAS_H_PAD + SCROLLBAR_W,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             position: "relative",
           }}
-          // Hide webkit scrollbar via inline style trick
         >
-          {/* Inner content column — centers the pages */}
+          {/* Hamburger / outline menu icon — top-left */}
           <div
             style={{
-              minWidth: PAGE_WIDTH_PX + CANVAS_H_PAD * 2,
-              paddingTop: VERT_PAD,
-              paddingBottom: VERT_PAD,
-              paddingLeft: CANVAS_H_PAD,
-              paddingRight: CANVAS_H_PAD + SCROLLBAR_W,
+              position: "absolute",
+              top: VERT_PAD + 12,
+              left: 12,
+              width: 28,
+              height: 28,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              position: "relative",
+              justifyContent: "center",
+              borderRadius: 4,
+              cursor: "pointer",
+              color: "#5f6368",
+              zIndex: 2,
             }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.backgroundColor =
+                "#e0e0e0")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.backgroundColor =
+                "transparent")
+            }
+            title="Document outline"
           >
-            {/* Hamburger / outline menu icon — top-left */}
-            <div
-              style={{
-                position: "absolute",
-                top: VERT_PAD + 12,
-                left: 12,
-                width: 28,
-                height: 28,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 4,
-                cursor: "pointer",
-                color: "#5f6368",
-                zIndex: 2,
-              }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLElement).style.backgroundColor =
-                  "#e0e0e0")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLElement).style.backgroundColor =
-                  "transparent")
-              }
-              title="Document outline"
-            >
-              {/* Three-line hamburger */}
-              <svg width="16" height="14" viewBox="0 0 16 14">
-                <rect
-                  x="0"
-                  y="0"
-                  width="16"
-                  height="2"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="0"
-                  y="6"
-                  width="12"
-                  height="2"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="0"
-                  y="12"
-                  width="10"
-                  height="2"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-
-            {/* Pages */}
-            {Array.from({ length: numPages }).map((_, idx) => (
-              <React.Fragment key={idx}>
-                {/* Page */}
-                <div
-                  data-page={idx + 1}
-                  style={{
-                    width: PAGE_WIDTH_PX,
-                    minHeight: PAGE_HEIGHT_PX,
-                    backgroundColor: "#ffffff",
-                    boxShadow:
-                      "0 1px 3px rgba(0,0,0,0.20), 0 1px 1px rgba(0,0,0,0.14)",
-                    border: "1px solid #c7c7c7",
-                    position: "relative",
-                    flexShrink: 0,
-                    // inner padding = 1 inch
-                    padding: `${PAGE_MARGIN_PX}px`,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {children ? children(idx) : null}
-                </div>
-
-                {/* Page separator gap (not after last page) */}
-                {idx < numPages - 1 && <PageSeparator />}
-              </React.Fragment>
-            ))}
+            {/* Three-line hamburger */}
+            <svg width="16" height="14" viewBox="0 0 16 14">
+              <rect
+                x="0"
+                y="0"
+                width="16"
+                height="2"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="0"
+                y="6"
+                width="12"
+                height="2"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="0"
+                y="12"
+                width="10"
+                height="2"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
           </div>
-        </div>
 
-        {/* Custom scrollbar overlaid on the right */}
-        <CustomScrollbar
-          scrollTop={scrollTop}
-          scrollHeight={scrollHeight}
-          clientHeight={clientHeight}
-          numPages={numPages}
-          pageHeight={PAGE_HEIGHT_PX}
-          pageGap={PAGE_GAP_PX}
-          onScroll={handleScroll}
-        />
+          {/* Pages */}
+          {Array.from({ length: numPages }).map((_, idx) => (
+            <React.Fragment key={idx}>
+              {/* Page */}
+              <div
+                data-page={idx + 1}
+                style={{
+                  width: PAGE_WIDTH_PX,
+                  minHeight: PAGE_HEIGHT_PX,
+                  backgroundColor: "#ffffff",
+                  boxShadow:
+                    "0 1px 3px rgba(0,0,0,0.20), 0 1px 1px rgba(0,0,0,0.14)",
+                  border: "1px solid #c7c7c7",
+                  position: "relative",
+                  flexShrink: 0,
+                  // inner padding = 1 inch
+                  padding: `${PAGE_MARGIN_PX}px`,
+                  boxSizing: "border-box",
+                }}
+              >
+                {children ? children(idx) : null}
+              </div>
+
+              {/* Page separator gap (not after last page) */}
+              {idx < numPages - 1 && <PageSeparator />}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
+
+      {/* Custom scrollbar overlaid on the right */}
+      <CustomScrollbar
+        scrollTop={scrollTop}
+        scrollHeight={scrollHeight}
+        clientHeight={clientHeight}
+        numPages={numPages}
+        pageHeight={PAGE_HEIGHT_PX}
+        pageGap={PAGE_GAP_PX}
+        onScroll={handleScroll}
+      />
 
       {/* Hide native webkit scrollbar */}
       <style>{`

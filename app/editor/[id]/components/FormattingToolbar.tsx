@@ -224,7 +224,7 @@ function MenuBar() {
 
 export function FormattingToolbar({ selectedBlock, updateBlockStyle }: FormattingToolbarProps) {
   const [tick, rerender] = useReducer((x) => x + 1, 0);
-  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const { getEditor } = useEditorContext();
   const editor = getEditor();
 
@@ -242,176 +242,169 @@ export function FormattingToolbar({ selectedBlock, updateBlockStyle }: Formattin
   return (
     <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
 
-      {/* ── Row 1: Title bar ── */}
-      <TitleBar />
-
-      {/* ── Row 2: Menu bar ── */}
-      <MenuBar />
-
-      {/* ── Row 3: Formatting toolbar (collapsible) ── */}
-      {toolbarVisible ? (
-        <div style={{
-          height: 40, backgroundColor: "#f8f9fa", display: "flex", alignItems: "center",
-          padding: "0 8px", gap: 1, flexShrink: 0, overflowX: "auto", overflowY: "hidden", userSelect: "none",
-        }}>
-          {/* Menus search pill */}
-          <TBtn title="Search menus (Alt+/)" style={{ gap: 5, padding: "0 10px", borderRadius: 20, border: "1px solid transparent" }}>
-            <Search size={13} style={{ color: "#5f6368" }} />
-            <span style={{ fontSize: 13, color: "#3c4043", fontFamily: "'Google Sans', Arial, sans-serif" }}>Menus</span>
-          </TBtn>
-
-          <Sep />
-
-          <TBtn title="Undo (Ctrl+Z)" onClick={() => editor?.chain().focus().undo().run()}><Undo size={16} /></TBtn>
-          <TBtn title="Redo (Ctrl+Y)" onClick={() => editor?.chain().focus().redo().run()}><Redo size={16} /></TBtn>
-          <TBtn title="Print (Ctrl+P)"><Printer size={15} /></TBtn>
-          <TBtn title="Spell check (Ctrl+Alt+X)"><SpellCheck size={15} /></TBtn>
-          <TBtn title="Paint format"><PaintBucket size={14} /></TBtn>
-
-          <Sep />
-
-          <GSelect value="100%" onChange={() => {}} options={["50%","75%","90%","100%","125%","150%","200%"]} title="Zoom" />
-
-          <Sep />
-
-          <GSelect value="Normal text" onChange={() => {}} options={PARAGRAPH_STYLES} title="Paragraph styles" />
-
-          <Sep />
-
-          <GSelect value="Arial" onChange={() => {}} options={FONT_FAMILIES} title="Font" />
-
-          <Sep />
-
-          <FontSizeControl value={fontSize} onChange={(v) => { if (blockId) updateBlockStyle(blockId, { fontSize: v }); }} />
-
-          <Sep />
-
-          <TBtn active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)">
-            <Bold size={15} strokeWidth={2.5} />
-          </TBtn>
-          <TBtn active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)">
-            <Italic size={15} />
-          </TBtn>
-          <TBtn active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)">
-            <Underline size={15} />
-          </TBtn>
-
-          {/* Text color */}
-          <div style={{ position: "relative", display: "flex", alignItems: "center", flexShrink: 0 }} title="Text color">
-            <TBtn>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, fontFamily: "'Google Sans', Arial, sans-serif" }}>A</span>
-                <div style={{ width: 13, height: 3, backgroundColor: "#ea4335", borderRadius: 1 }} />
-              </div>
-            </TBtn>
-            <input type="color" defaultValue="#ea4335"
-              onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
-              style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
-          </div>
-
-          {/* Highlight pen */}
-          <TBtn title="Highlight color">
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-              <Pencil size={13} />
-              <div style={{ width: 13, height: 3, backgroundColor: "#fbbc04", borderRadius: 1 }} />
-            </div>
-          </TBtn>
-
-          <Sep />
-
-          <TBtn title="Insert link (Ctrl+K)"><Link size={15} /></TBtn>
-          <TBtn title="Insert image"><Image size={15} /></TBtn>
-
-          <Sep />
-
-          <TBtn active={textAlign === "left"} onClick={() => blockId && updateBlockStyle(blockId, { textAlign: "left" })} title="Align left">
-            <AlignLeft size={15} />
-          </TBtn>
-
-          {/* Line spacing icon (manual SVG-ish) */}
-          <TBtn title="Line & paragraph spacing">
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {[0,1,2].map(i => (
-                <div key={i} style={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  <div style={{ width: 4, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
-                  <div style={{ width: 9, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
-                </div>
-              ))}
-            </div>
-          </TBtn>
-
-          {/* Checklist */}
-          <TBtn title="Checklist">
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {[0,1,2].map(i => (
-                <div key={i} style={{ display: "flex", gap: 3, alignItems: "center" }}>
-                  <div style={{ width: 5, height: 5, border: "1.5px solid #3c4043", borderRadius: 1 }} />
-                  <div style={{ width: 8, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
-                </div>
-              ))}
-            </div>
-          </TBtn>
-
-          <TBtn active={editor?.isActive("bulletList")} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bulleted list">
-            <List size={15} />
-          </TBtn>
-          <TBtn active={editor?.isActive("orderedList")} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered list">
-            <ListOrdered size={15} />
-          </TBtn>
-          <TBtn title="Decrease indent" onClick={() => editor?.chain().focus().liftListItem("listItem").run()}>
-            <Outdent size={15} />
-          </TBtn>
-          <TBtn title="Increase indent" onClick={() => editor?.chain().focus().sinkListItem("listItem").run()}>
-            <Indent size={15} />
-          </TBtn>
-
-          <Sep />
-
-          <TBtn title="Clear formatting (Ctrl+\)" onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}>
-            <RemoveFormatting size={15} />
-          </TBtn>
-
-          {/* ── Spacer ── */}
-          <div style={{ flex: 1, minWidth: 4 }} />
-
-          {/* Editing mode dropdown */}
-          <div style={{ display: "flex", alignItems: "center", borderRadius: 4, flexShrink: 0 }}>
-            <button style={{
-              display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 8px",
-              border: "none", background: "transparent", cursor: "pointer", color: "#3c4043",
-              fontSize: 13, fontFamily: "'Google Sans', Arial, sans-serif", borderRadius: "4px 0 0 4px",
-            }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f3f4")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              <Pencil size={13} style={{ color: "#5f6368" }} />
-              <span>Editing</span>
-            </button>
-            <button style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              height: 28, width: 20, border: "none", background: "transparent",
-              cursor: "pointer", color: "#5f6368", borderRadius: "0 4px 4px 0",
-            }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f3f4")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              <ChevronDown size={13} />
-            </button>
-          </div>
-
-          {/* Hide toolbar ^ */}
-          <TBtn title="Hide the menus (Ctrl+Shift+F)" onClick={() => setToolbarVisible(false)} style={{ minWidth: 26 }}>
-            <ChevronUp size={15} />
-          </TBtn>
-        </div>
-      ) : (
-        /* Collapsed restore strip */
-        <div style={{ height: 20, backgroundColor: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 8px" }}>
-          <TBtn title="Show the menus" onClick={() => setToolbarVisible(true)} style={{ height: 20, minWidth: 24 }}>
-            <ChevronDown size={14} />
-          </TBtn>
-        </div>
+      {/* ── Row 1 & 2: Title & Menu bars (collapsible) ── */}
+      {headerVisible && (
+        <>
+          <TitleBar />
+          <MenuBar />
+        </>
       )}
+
+      {/* ── Row 3: Formatting toolbar (Always visible) ── */}
+      <div style={{
+        height: 40, backgroundColor: "#f8f9fa", display: "flex", alignItems: "center",
+        padding: "0 8px", gap: 1, flexShrink: 0, overflowX: "auto", overflowY: "hidden", userSelect: "none",
+      }}>
+        {/* Menus search pill */}
+        <TBtn title="Search menus (Alt+/)" style={{ gap: 5, padding: "0 10px", borderRadius: 20, border: "1px solid transparent" }}>
+          <Search size={13} style={{ color: "#5f6368" }} />
+          <span style={{ fontSize: 13, color: "#3c4043", fontFamily: "'Google Sans', Arial, sans-serif" }}>Menus</span>
+        </TBtn>
+
+        <Sep />
+
+        <TBtn title="Undo (Ctrl+Z)" onClick={() => editor?.chain().focus().undo().run()}><Undo size={16} /></TBtn>
+        <TBtn title="Redo (Ctrl+Y)" onClick={() => editor?.chain().focus().redo().run()}><Redo size={16} /></TBtn>
+        <TBtn title="Print (Ctrl+P)"><Printer size={15} /></TBtn>
+        <TBtn title="Spell check (Ctrl+Alt+X)"><SpellCheck size={15} /></TBtn>
+        <TBtn title="Paint format"><PaintBucket size={14} /></TBtn>
+
+        <Sep />
+
+        <GSelect value="100%" onChange={() => {}} options={["50%","75%","90%","100%","125%","150%","200%"]} title="Zoom" />
+
+        <Sep />
+
+        <GSelect value="Normal text" onChange={() => {}} options={PARAGRAPH_STYLES} title="Paragraph styles" />
+
+        <Sep />
+
+        <GSelect value="Arial" onChange={() => {}} options={FONT_FAMILIES} title="Font" />
+
+        <Sep />
+
+        <FontSizeControl value={fontSize} onChange={(v) => { if (blockId) updateBlockStyle(blockId, { fontSize: v }); }} />
+
+        <Sep />
+
+        <TBtn active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)">
+          <Bold size={15} strokeWidth={2.5} />
+        </TBtn>
+        <TBtn active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)">
+          <Italic size={15} />
+        </TBtn>
+        <TBtn active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)">
+          <Underline size={15} />
+        </TBtn>
+
+        {/* Text color */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center", flexShrink: 0 }} title="Text color">
+          <TBtn>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, fontFamily: "'Google Sans', Arial, sans-serif" }}>A</span>
+              <div style={{ width: 13, height: 3, backgroundColor: "#ea4335", borderRadius: 1 }} />
+            </div>
+          </TBtn>
+          <input type="color" defaultValue="#ea4335"
+            onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
+            style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+        </div>
+
+        {/* Highlight pen */}
+        <TBtn title="Highlight color">
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+            <Pencil size={13} />
+            <div style={{ width: 13, height: 3, backgroundColor: "#fbbc04", borderRadius: 1 }} />
+          </div>
+        </TBtn>
+
+        <Sep />
+
+        <TBtn title="Insert link (Ctrl+K)"><Link size={15} /></TBtn>
+        <TBtn title="Insert image"><Image size={15} /></TBtn>
+
+        <Sep />
+
+        <TBtn active={textAlign === "left"} onClick={() => blockId && updateBlockStyle(blockId, { textAlign: "left" })} title="Align left">
+          <AlignLeft size={15} />
+        </TBtn>
+
+        {/* Line spacing icon (manual SVG-ish) */}
+        <TBtn title="Line & paragraph spacing">
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{ display: "flex", gap: 2, alignItems: "center" }}>
+                <div style={{ width: 4, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
+                <div style={{ width: 9, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
+              </div>
+            ))}
+          </div>
+        </TBtn>
+
+        {/* Checklist */}
+        <TBtn title="Checklist">
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                <div style={{ width: 5, height: 5, border: "1.5px solid #3c4043", borderRadius: 1 }} />
+                <div style={{ width: 8, height: 1.5, background: "#3c4043", borderRadius: 1 }} />
+              </div>
+            ))}
+          </div>
+        </TBtn>
+
+        <TBtn active={editor?.isActive("bulletList")} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bulleted list">
+          <List size={15} />
+        </TBtn>
+        <TBtn active={editor?.isActive("orderedList")} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered list">
+          <ListOrdered size={15} />
+        </TBtn>
+        <TBtn title="Decrease indent" onClick={() => editor?.chain().focus().liftListItem("listItem").run()}>
+          <Outdent size={15} />
+        </TBtn>
+        <TBtn title="Increase indent" onClick={() => editor?.chain().focus().sinkListItem("listItem").run()}>
+          <Indent size={15} />
+        </TBtn>
+
+        <Sep />
+
+        <TBtn title="Clear formatting (Ctrl+\)" onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}>
+          <RemoveFormatting size={15} />
+        </TBtn>
+
+        {/* ── Spacer ── */}
+        <div style={{ flex: 1, minWidth: 4 }} />
+
+        {/* Editing mode dropdown */}
+        <div style={{ display: "flex", alignItems: "center", borderRadius: 4, flexShrink: 0 }}>
+          <button style={{
+            display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 8px",
+            border: "none", background: "transparent", cursor: "pointer", color: "#3c4043",
+            fontSize: 13, fontFamily: "'Google Sans', Arial, sans-serif", borderRadius: "4px 0 0 4px",
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f3f4")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <Pencil size={13} style={{ color: "#5f6368" }} />
+            <span>Editing</span>
+          </button>
+          <button style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            height: 28, width: 20, border: "none", background: "transparent",
+            cursor: "pointer", color: "#5f6368", borderRadius: "0 4px 4px 0",
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f3f4")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <ChevronDown size={13} />
+          </button>
+        </div>
+
+        {/* Toggle header visibility */}
+        <TBtn title={headerVisible ? "Hide the menus" : "Show the menus"} onClick={() => setHeaderVisible(!headerVisible)} style={{ minWidth: 26 }}>
+          {headerVisible ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </TBtn>
+      </div>
     </div>
   );
 }

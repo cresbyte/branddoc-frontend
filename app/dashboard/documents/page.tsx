@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { 
   FileText, 
   CheckCircle2, 
@@ -11,6 +12,7 @@ import {
 import { useDashboard } from "../components/DashboardContext";
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const { setCta, setSearch, setHeaderTitle } = useDashboard();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -120,10 +122,13 @@ export default function DocumentsPage() {
                   </span>
                 </td>
                 <td style={{ padding: "16px 20px", textAlign: "right" }}>
-                  <button style={{ 
-                    background: "none", border: "none", color: "#2563EB", 
-                    fontSize: 13, fontWeight: 500, cursor: "pointer" 
-                  }}>
+                  <button 
+                    onClick={() => doc.status !== "Finalized" ? router.push(`/editor/${doc.id}`) : console.log("Download", doc.id)}
+                    style={{ 
+                      background: "none", border: "none", color: "#2563EB", 
+                      fontSize: 13, fontWeight: 500, cursor: "pointer" 
+                    }}
+                  >
                     {doc.status === "Finalized" ? "Download" : "Edit"}
                   </button>
                 </td>

@@ -12,6 +12,7 @@ import { EditorContextProvider } from "./components/EditorContext";
 import { EditorLeftSidebar } from "./components/EditorLeftSidebar";
 import { FormattingToolbar } from "./components/FormattingToolbar";
 import { Block, BlockType } from "./components/types";
+import { EditorRightSidebar } from "./components/EditorRightSidebar";
 
 const ZOOM_STEPS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
 
@@ -217,14 +218,14 @@ export default function EditorPage() {
           marginId={marginId}
         /> */}
 
-        {/* <EditorRightSidebar
-          selectedBlockId={selectedBlockId}
-          blocks={blocks}
-          updateBlockContent={updateBlockContent}
-          updateBlockStyle={updateBlockStyle}
-          marginId={marginId}
-          setMarginId={setMarginId}
-        /> */}
+          <EditorRightSidebar
+            selectedBlockId={selectedBlockId}
+            blocks={blocks}
+            updateBlockContent={updateBlockContent}
+            updateBlockStyle={updateBlockStyle}
+            marginId={marginId}
+            setMarginId={setMarginId}
+          />
       </div>
 
       {/* ── PREVIEW MODAL ── */}
