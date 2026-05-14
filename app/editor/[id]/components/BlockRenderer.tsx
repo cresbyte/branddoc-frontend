@@ -16,8 +16,27 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
+import TextAlign from "@tiptap/extension-text-align";
+import FontFamily from "@tiptap/extension-font-family";
 import { useEditorContext } from "./EditorContext";
 import { BlockAddMenu } from "./BlockAddMenu";
+
+// Simple extension for font size
+const FontSize = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (element) => element.style.fontSize,
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize}` };
+        },
+      },
+    };
+  },
+});
 
 interface BlockRendererProps {
   block: Block;
@@ -139,12 +158,24 @@ export function BlockRenderer({
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, Underline, TextStyle, Color],
+    extensions: [
+      StarterKit, 
+      Underline, 
+      TextStyle, 
+      Color, 
+      FontSize,
+      FontFamily,
+      TextAlign.configure({ types: ["heading", "paragraph"] })
+    ],
     content: block.content.text || "",
     editable: !isPreview && isEditableText,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       updateBlockContent(block.id, { text: editor.getHTML() });
+    },
+    onFocus: ({ editor }) => {
+      onSelect(block.id);
+      registerEditor(editor);
     },
   });
 
@@ -161,10 +192,6 @@ export function BlockRenderer({
   useEffect(() => {
     if (isSelected && editor) {
       registerEditor(editor);
-    } else if (!isSelected && editor) {
-      // Optional: unregister when deselected if needed, 
-      // but FormattingToolbar hides entirely if !selectedBlock
-      // registerEditor(null);
     }
   }, [isSelected, editor, registerEditor]);
 
