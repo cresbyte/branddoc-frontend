@@ -1,18 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft } from "lucide-react";
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
-      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853" />
-      <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05" />
-      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
-    </svg>
-  );
-}
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
+import { registerWithEmail, loginWithGoogle } from "@/lib/auth";
+import { GoogleLogin } from "@react-oauth/google";
+import { useAuth } from "@/lib/AuthContext";
 
 interface SignUpProps {
   onSignIn: () => void;
@@ -21,136 +13,266 @@ interface SignUpProps {
 }
 
 export function SignUp({ onSignIn, onForgot, onSuccess }: SignUpProps) {
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+    setError("");
     setStep(2);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !password) return;
     setLoading(true);
-    setTimeout(onSuccess, 1000);
+    setError("");
+    try {
+      const user = await registerWithEmail(email, name, password);
+      login(user);
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGoogleSuccess = async (credentialResponse: any) => {
+    setLoading(true);
+    setError("");
+    try {
+      const user = await loginWithGoogle(credentialResponse.credential);
+      login(user);
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign up failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", marginBottom: 32 }}>Create your account</h1>
+    <div style={{ width: "100%" }}>
+      <div style={{ textAlign: "left", marginBottom: 32 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0F172A", marginBottom: 8, letterSpacing: "-0.02em" }}>
+          Create your account
+        </h1>
+        <p style={{ color: "#64748B", fontSize: 15 }}>
+          Start your 14-day free trial today.
+        </p>
+      </div>
+
+      {error && (
+        <div style={{ 
+          padding: "12px 16px", 
+          background: "#FEF2F2", 
+          border: "1px solid #FEE2E2", 
+          borderRadius: 10, 
+          color: "#B91C1C", 
+          fontSize: 14, 
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 10
+        }}>
+          {error}
+        </div>
+      )}
 
       {step === 1 ? (
         <>
-          <button style={{
-            width: "100%", height: 44, borderRadius: 8, border: "1.2px solid #E5E7EB",
-            background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            fontSize: 14, fontWeight: 600, color: "#1F2937", cursor: "pointer", marginBottom: 24
-          }}>
-            <GoogleIcon /> Sign up with Google
-          </button>
+          <div style={{ marginBottom: 24 }}>
+            <GoogleLogin
+              onSuccess={onGoogleSuccess}
+              onError={() => setError("Google sign up failed")}
+              useOneTap
+              theme="outline"
+              size="large"
+              width="100%"
+              text="signup_with"
+              shape="rectangular"
+            />
+          </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ flex: 1, height: 1.2, background: "#F3F4F6" }} />
-            <span style={{ fontSize: 13, color: "#9CA3AF" }}>or</span>
-            <div style={{ flex: 1, height: 1.2, background: "#F3F4F6" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+            <div style={{ flex: 1, height: 1, background: "#F1F5F9" }} />
+            <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "#F1F5F9" }} />
           </div>
 
           <form onSubmit={handleContinue} style={{ textAlign: "left" }}>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Work email"
-              autoFocus
-              style={{
-                width: "100%", height: 44, borderRadius: 8, border: "1.2px solid #E5E7EB",
-                padding: "0 14px", fontSize: 14, background: "#fff", marginBottom: 12,
-                outline: "none"
-              }}
-            />
+            <div style={{ marginBottom: 20 }}>
+              <label htmlFor="email" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
+                Work Email
+              </label>
+              <div style={{ position: "relative" }}>
+                <Mail size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  autoFocus
+                  style={{
+                    width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
+                    padding: "0 14px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
+                    outline: "none", boxSizing: "border-box", color: "#0F172A"
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.border = "1.5px solid #0F172A";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.border = "1.5px solid #E2E8F0";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+            </div>
             <button
               type="submit"
+              disabled={!email}
               style={{
-                width: "100%", height: 44, borderRadius: 8, border: "none",
+                width: "100%", height: 48, borderRadius: 10, border: "none",
                 background: email ? "#0F172A" : "#94A3B8", color: "#fff",
-                fontSize: 14, fontWeight: 600, cursor: email ? "pointer" : "default"
+                fontSize: 16, fontWeight: 600, cursor: email ? "pointer" : "default",
+                transition: "all 0.2s",
+                boxShadow: email ? "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" : "none"
               }}
             >
-              Continue
+              Get started
             </button>
-            <div style={{ marginTop: 16, textAlign: "center" }}>
-                <button 
-                    type="button" 
-                    onClick={onForgot} 
-                    style={{ background: "none", border: "none", color: "#6B7280", fontSize: 13, cursor: "pointer" }}
-                >
-                    Forgot password?
-                </button>
-            </div>
           </form>
         </>
       ) : (
         <form onSubmit={handleSubmit} style={{ textAlign: "left" }}>
-          <div style={{ marginBottom: 20 }}>
-             <button 
-                onClick={() => setStep(1)} 
-                style={{ 
-                    background: "none", border: "none", color: "#6B7280", 
-                    fontSize: 13, display: "flex", alignItems: "center", gap: 6,
-                    padding: 0, cursor: "pointer"
-                }}
-             >
-                <ArrowLeft size={14} /> {email}
-             </button>
+          <div style={{ marginBottom: 24 }}>
+            <button
+              type="button"
+              onClick={() => { setStep(1); setError(""); }}
+              style={{
+                background: "rgba(15, 23, 42, 0.05)", border: "none", color: "#475569",
+                fontSize: 14, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 8, 
+                padding: "6px 12px", borderRadius: 8, cursor: "pointer", transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = "rgba(15, 23, 42, 0.08)"}
+              onMouseOut={(e) => e.currentTarget.style.background = "rgba(15, 23, 42, 0.05)"}
+            >
+              <ArrowLeft size={14} /> {email}
+            </button>
           </div>
 
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Full Name"
-            autoFocus
-            style={{
-              width: "100%", height: 44, borderRadius: 8, border: "1.2px solid #E5E7EB",
-              padding: "0 14px", fontSize: 14, background: "#fff", marginBottom: 12,
-              outline: "none"
-            }}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create Password"
-            style={{
-              width: "100%", height: 44, borderRadius: 8, border: "1.2px solid #E5E7EB",
-              padding: "0 14px", fontSize: 14, background: "#fff", marginBottom: 12,
-              outline: "none"
-            }}
-          />
+          <div style={{ marginBottom: 20 }}>
+            <label htmlFor="name" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
+              Full Name
+            </label>
+            <div style={{ position: "relative" }}>
+              <User size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                autoFocus
+                style={{
+                  width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
+                  padding: "0 14px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
+                  outline: "none", boxSizing: "border-box", color: "#0F172A"
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = "1.5px solid #0F172A";
+                  e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = "1.5px solid #E2E8F0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label htmlFor="password" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
+              Create Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <Lock size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{
+                  width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
+                  padding: "0 44px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
+                  outline: "none", boxSizing: "border-box", color: "#0F172A"
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = "1.5px solid #0F172A";
+                  e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = "1.5px solid #E2E8F0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ 
+                  position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", 
+                  background: "none", border: "none", color: "#94A3B8", cursor: "pointer", padding: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !name || !password}
             style={{
-              width: "100%", height: 44, borderRadius: 8, border: "none",
+              width: "100%", height: 48, borderRadius: 10, border: "none",
               background: (name && password) ? "#0F172A" : "#94A3B8", color: "#fff",
-              fontSize: 14, fontWeight: 600, cursor: (name && password) ? "pointer" : "default"
+              fontSize: 16, fontWeight: 600, cursor: (name && password) ? "pointer" : "default",
+              transition: "all 0.2s",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              boxShadow: (name && password) ? "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" : "none"
             }}
           >
-            {loading ? "Creating account..." : "Complete Sign Up"}
+            {loading ? <Loader2 size={20} className="animate-spin" /> : "Complete Sign Up"}
           </button>
+          
+          <p style={{ marginTop: 16, fontSize: 12, color: "#94A3B8", textAlign: "center", lineHeight: 1.5 }}>
+            By creating an account, you agree to our <span style={{ textDecoration: "underline", cursor: "pointer" }}>Terms of Service</span> and <span style={{ textDecoration: "underline", cursor: "pointer" }}>Privacy Policy</span>.
+          </p>
         </form>
       )}
 
       {step === 1 && (
-        <p style={{ marginTop: 24, fontSize: 13.5, color: "#6B7280" }}>
-            Already have an account? <span onClick={onSignIn} style={{ color: "#111827", fontWeight: 600, cursor: "pointer" }}>Sign in</span>
+        <p style={{ marginTop: 32, fontSize: 15, color: "#64748B", textAlign: "center" }}>
+          Already have an account?{" "}
+          <button 
+            onClick={onSignIn} 
+            style={{ background: "none", border: "none", color: "#0F172A", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 15 }}
+          >
+            Sign in
+          </button>
         </p>
       )}
-    </>
+    </div>
   );
 }

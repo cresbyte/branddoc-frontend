@@ -96,8 +96,11 @@ export function FormattingToolbar({ title, onTitleChange, docHtml }: FormattingT
   const [tick,          rerender]       = useReducer((x) => x + 1, 0);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [showFind,      setShowFind]    = useState(false);
+  const [mounted,       setMounted]     = useState(false);
   const { getEditor } = useEditorContext();
   const editor = getEditor();
+
+  useEffect(() => setMounted(true), []);
 
   // Re-render when editor state changes (selection, marks, etc.)
   useEffect(() => {
@@ -204,9 +207,9 @@ export function FormattingToolbar({ title, onTitleChange, docHtml }: FormattingT
               <div style={{ width: 13, height: 3, backgroundColor: "#ea4335", borderRadius: 1 }} />
             </div>
           </TBtn>
-          <input type="color" defaultValue="#ea4335"
+          {mounted && <input type="color" defaultValue="#ea4335"
             onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
-            style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+            style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />}
         </div>
 
         {/* Highlight */}
@@ -217,9 +220,9 @@ export function FormattingToolbar({ title, onTitleChange, docHtml }: FormattingT
               <div style={{ width: 13, height: 3, backgroundColor: "#fbbc04", borderRadius: 1 }} />
             </div>
           </TBtn>
-          <input type="color" defaultValue="#fbbc04"
+          {mounted && <input type="color" defaultValue="#fbbc04"
             onChange={(e) => editor?.chain().focus().setMark?.("textStyle", { backgroundColor: e.target.value }).run?.()}
-            style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+            style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />}
         </div>
 
         <Sep />

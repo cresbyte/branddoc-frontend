@@ -18,6 +18,7 @@ import {
   NavItem,
 } from "./components/NavData";
 import { DashboardProvider, useDashboard } from "./components/DashboardContext";
+import { useAuth } from "@/lib/AuthContext";
 
 /* ─── Sub-components ────────────────────────────────────────── */
 function SidebarSection({ label }: { label: string }) {
@@ -92,6 +93,10 @@ function NavLink({
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { cta, search, headerTitle, extra } = useDashboard();
+  const { user, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "?";
 
   return (
     <div
@@ -220,7 +225,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div
           style={{ padding: "8px 8px 12px", borderTop: "0.5px solid #F3F4F6" }}
         >
-          <button
+          <div
+            onClick={() => setShowUserMenu(!showUserMenu)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -229,14 +235,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               padding: "8px 10px",
               border: "none",
               borderRadius: 8,
-              background: "transparent",
+              backgroundColor: "transparent",
               cursor: "pointer",
               fontFamily: "inherit",
               transition: "background 0.12s",
+              position: "relative",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
             onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
+              (e.currentTarget.style.backgroundColor = "transparent")
             }
           >
             <div
@@ -244,7 +251,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "#1D4ED8",
+                backgroundColor: "#1D4ED8",
+                backgroundImage: user?.profile_picture ? `url(${user.profile_picture})` : "none",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -254,7 +264,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 flexShrink: 0,
               }}
             >
-              DM
+              {!user?.profile_picture && userInitial}
             </div>
             <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
               <div
@@ -267,12 +277,43 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   whiteSpace: "nowrap",
                 }}
               >
-                Devrizal M.
+                {user?.name || "User"}
               </div>
-              <div style={{ fontSize: 11, color: "#9CA3AF" }}>Free plan</div>
+              <div style={{ fontSize: 11, color: "#9CA3AF" }}>{user?.email || "Account"}</div>
             </div>
             <ChevronsUpDown size={14} color="#9CA3AF" />
-          </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div style={{
+                position: "absolute",
+                bottom: "calc(100% + 4px)",
+                left: 8,
+                right: 8,
+                background: "#FFFFFF",
+                border: "0.5px solid #E5E7EB",
+                borderRadius: 10,
+                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                padding: "4px",
+                zIndex: 100,
+                animation: "slideUp 0.15s ease-out",
+              }}>
+                <Link href="/dashboard/profile" style={{ textDecoration: "none" }}>
+                  <button style={dropdownItemStyle} onMouseEnter={hHover} onMouseLeave={lHover}>
+                    Profile Settings
+                  </button>
+                </Link>
+                <div style={{ height: "0.5px", background: "#F3F4F6", margin: "4px 0" }} />
+                <button 
+                  onClick={(e) => { e.stopPropagation(); logout(); }} 
+                  style={{ ...dropdownItemStyle, color: "#EF4444" }}
+                  onMouseEnter={hHoverRed} onMouseLeave={lHover}
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
@@ -401,9 +442,34 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
+
+const dropdownItemStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "none",
+  borderRadius: 6,
+  background: "transparent",
+  fontSize: 13,
+  fontWeight: 500,
+  color: "#374151",
+  textAlign: "left",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  transition: "background 0.1s",
+};
+
+const hHover = (e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = "#F9FAFB");
+const hHoverRed = (e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = "#FEF2F2");
+const lHover = (e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.background = "transparent");
 
 export default function DashboardLayout({
   children,
