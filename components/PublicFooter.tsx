@@ -44,7 +44,7 @@ export function PublicFooter() {
                   }}>Product</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                      <Link href="/templates" style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", textDecoration: "none" }}>Templates</Link>
-                     <Link href="/dashboard/brand" style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", textDecoration: "none" }}>Brand Kit</Link>
+                     <Link href="/dashboard/brands" style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", textDecoration: "none" }}>Brand Kit</Link>
                      <Link href="/pricing" style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", textDecoration: "none" }}>Pricing</Link>
                      <Link href="/changelog" style={{ fontSize: 13.5, color: "rgba(255,255,255,0.45)", textDecoration: "none" }}>Changelog</Link>
                   </div>

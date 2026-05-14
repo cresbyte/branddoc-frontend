@@ -172,7 +172,7 @@ export default function TemplatizeCustomizePage() {
                 <div className="text-sm text-[#1a1a1a] font-medium bg-gray-50 border border-gray-200 rounded px-2.5 py-1.5">
                   {sampleBrand.companyName}
                 </div>
-                <Link href="/dashboard/brand">
+                <Link href="/dashboard/brands">
                   <span className="text-[10px] text-[#4f46e5] hover:underline cursor-pointer">Edit in brand profile</span>
                 </Link>
               </div>

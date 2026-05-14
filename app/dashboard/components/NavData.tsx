@@ -24,7 +24,10 @@ export const NAV_WORKSPACE: NavItem[] = [
   { icon: <LayoutDashboard size={15} />, label: "Dashboard", id: "dashboard", href: "/dashboard" },
   { icon: <Files size={15} />, label: "My Documents", count: 24, id: "docs", href: "/dashboard/documents" },
   { icon: <LayoutTemplate size={15} />, label: "Templates", count: 80, id: "templates", href: "/dashboard/templates" },
-  { icon: <Palette size={15} />, label: "My Brand", id: "brand", href: "/dashboard/brand" },
+];
+
+export const NAV_BRANDS: NavItem[] = [
+  { icon: <Palette size={15} />, label: "Brands", id: "brands", href: "/dashboard/brands" },
 ];
 
 export const NAV_DOCS: NavItem[] = [

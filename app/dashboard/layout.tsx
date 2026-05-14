@@ -15,6 +15,7 @@ import {
   NAV_WORKSPACE,
   NAV_DOCS,
   NAV_COLLECTIONS,
+  NAV_BRANDS,
   NavItem,
 } from "./components/NavData";
 import { DashboardProvider, useDashboard } from "./components/DashboardContext";
@@ -219,6 +220,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <Plus size={15} />
             <span>New collection</span>
           </button>
+
+          <SidebarSection label="Brands" />
+          {NAV_BRANDS.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={pathname === item.href}
+            />
+          ))}
         </div>
 
         {/* User */}
