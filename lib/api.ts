@@ -1,8 +1,10 @@
-import { getAccessToken, logout as authLogout } from "./auth";
+import { getAccessToken, logout as authLogout, refreshAccessToken } from "./auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-async function fetchWithAuth(path: string, options: RequestInit = {}) {
+let refreshPromise: Promise<string> | null = null;
+
+async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<any> {
   const token = getAccessToken();
   
   const isFormData = options.body instanceof FormData;
@@ -23,8 +25,34 @@ async function fetchWithAuth(path: string, options: RequestInit = {}) {
 
   if (res.status === 401) {
     // Token might be expired
-    authLogout();
-    throw new Error("Session expired. Please login again.");
+    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh") : null;
+    
+    if (refreshToken) {
+      try {
+        if (!refreshPromise) {
+          refreshPromise = refreshAccessToken();
+        }
+        
+        const newAccessToken = await refreshPromise;
+        refreshPromise = null;
+        
+        // Retry the request with new token
+        return fetchWithAuth(path, {
+          ...options,
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${newAccessToken}`,
+          }
+        });
+      } catch (error) {
+        refreshPromise = null;
+        authLogout();
+        throw new Error("Session expired. Please login again.");
+      }
+    } else {
+      authLogout();
+      throw new Error("Session expired. Please login again.");
+    }
   }
 
   const data = await res.json().catch(() => ({}));

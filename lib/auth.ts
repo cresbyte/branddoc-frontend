@@ -14,7 +14,7 @@ export function getRefreshToken(): string | null {
   return typeof window !== "undefined" ? localStorage.getItem("refresh") : null;
 }
 
-function saveTokens(access: string, refresh: string) {
+export function saveTokens(access: string, refresh: string) {
   localStorage.setItem("access", access);
   localStorage.setItem("refresh", refresh);
   Cookies.set("authenticated", "true", { expires: 7 });
@@ -155,4 +155,22 @@ export async function resetPassword(
     code,
     new_password: newPassword,
   });
+}
+
+export async function refreshAccessToken(): Promise<string> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  try {
+    const data = await post<{ access: string; refresh: string }>("/api/auth/refresh/", {
+      refresh: refreshToken,
+    });
+    saveTokens(data.access, data.refresh);
+    return data.access;
+  } catch (error) {
+    clearTokens();
+    throw error;
+  }
 }
