@@ -1,220 +1,109 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
+import { TemplateCard } from "@/components/branding/TemplateCard";
+import { api, getBrandKit, getBrandTemplates, selectTemplate } from "@/lib/api";
 import {
-  Plus,
-  Palette,
-  Search,
-  Filter,
-  MoreVertical,
-  ExternalLink,
-  PlusCircle,
-  LayoutTemplate,
   CheckCircle2,
+  LayoutTemplate,
   Loader2,
-  X,
-  Eye,
+  MoreVertical,
+  Palette,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
-import { useDashboard } from "../components/DashboardContext";
-import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useDashboard } from "../components/DashboardContext";
 
-/* ─── Types ──────────────────────────────────────────────────── */
 interface BrandProfile {
   id: string;
+  user: string;
   company_name: string;
   tagline: string;
   logo: string | null;
+  email: string;
+  phone: string;
+  website: string;
+  address: string;
+  city: string;
+  country: string;
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  text_color: string;
+  background_color: string;
+  heading_font: string;
+  body_font: string;
+  base_font_size: number;
+  footer_text: string;
   created_at: string;
+  updated_at: string;
 }
 
-interface DocumentTemplate {
+interface BrandTemplate {
   id: string;
   name: string;
-  slug: string;
-  category: string;
-  icon: string;
   description: string;
-  schema: any;
-  default_content: any;
+  style_tag: string;
+  header_html: string;
+  footer_html: string;
+  template_css: string;
+  is_active: boolean;
+  is_premium: boolean;
 }
 
-/* ─── Sub-components ────────────────────────────────────────── */
-function TemplateCard({ 
-  template, 
-  onPreview, 
-  onUse 
-}: { 
-  template: DocumentTemplate; 
-  onPreview: (t: DocumentTemplate) => void;
-  onUse: (t: DocumentTemplate) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: "white",
-        borderRadius: 14,
-        border: "0.5px solid #E5E7EB",
-        overflow: "hidden",
-        transition: "all 0.2s ease-out",
-        transform: hovered ? "translateY(-4px)" : "none",
-        boxShadow: hovered ? "0 12px 24px rgba(0,0,0,0.06)" : "none",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div style={{ position: "relative", height: 120, background: "#F9FAFB", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LayoutTemplate size={40} color={hovered ? "#1D4ED8" : "#9CA3AF"} style={{ transition: "color 0.2s" }} />
-        {hovered && (
-          <div style={{
-            position: "absolute", inset: 0, background: "rgba(255,255,255,0.4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(2px)", transition: "all 0.2s"
-          }}>
-            <button 
-              onClick={() => onPreview(template)}
-              style={{
-                background: "white", color: "#111827", padding: "6px 12px", 
-                borderRadius: 8, fontSize: 12, fontWeight: 600, border: "0.5px solid #E5E7EB",
-                display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
-                boxShadow: "0 4px 6px rgba(0,0,0,0.05)"
-              }}
-            >
-              <Eye size={14} /> Preview
-            </button>
-          </div>
-        )}
-      </div>
-      <div style={{ padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 4 }}>
-          {template.name}
-        </h3>
-        <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 16, height: 32, overflow: "hidden", textOverflow: "ellipsis" }}>
-          {template.description || `Professional ${template.name} template for your business.`}
-        </p>
-        <button 
-          onClick={() => onUse(template)}
-          style={{
-            width: "100%", height: 34, borderRadius: 8,
-            background: hovered ? "#1D4ED8" : "#F3F4F6",
-            color: hovered ? "white" : "#4B5563",
-            border: "none",
-            fontSize: 12.5, fontWeight: 500,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "all 0.2s",
-            cursor: "pointer"
-          }}
-        >
-          <PlusCircle size={14} /> Use Template
-        </button>
-      </div>
-    </div>
-  );
+interface UserBrandKit {
+  id: string;
+  template: BrandTemplate | null;
+  header_html: string;
+  footer_html: string;
+  template_css: string;
+  created_at: string;
+  updated_at: string;
 }
 
-function PreviewModal({ template, onClose }: { template: DocumentTemplate; onClose: () => void }) {
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 1000,
-      background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 20
-    }}>
-      <div style={{
-        background: "white", borderRadius: 20, width: "100%", maxWidth: 800,
-        height: "85vh", display: "flex", flexDirection: "column", overflow: "hidden",
-        boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)"
-      }}>
-        <div style={{ padding: "20px 24px", borderBottom: "0.5px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ background: "#EFF6FF", color: "#1D4ED8", padding: 10, borderRadius: 12 }}>
-              <LayoutTemplate size={20} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{template.name} Preview</h2>
-              <p style={{ fontSize: 12, color: "#6B7280" }}>{template.category.toUpperCase()} · Quick Look</p>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ height: 36, width: 36, borderRadius: 18, border: "none", background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#6B7280" }}>
-            <X size={18} />
-          </button>
-        </div>
-        
-        <div style={{ flex: 1, overflowY: "auto", padding: 32, background: "#F9FAFB" }}>
-          <div style={{ maxWidth: 500, margin: "0 auto", padding: 40, background: "white", borderRadius: 8, boxShadow: "0 4px 6px rgba(0,0,0,0.02)", border: "0.5px solid #E5E7EB" }}>
-             {/* Mock rendering of schema structure */}
-             <div style={{ borderBottom: "2px solid #E5E7EB", paddingBottom: 20, marginBottom: 20 }}>
-                <div style={{ height: 12, width: 100, background: "#F3F4F6", borderRadius: 4, marginBottom: 8 }} />
-                <div style={{ height: 20, width: 200, background: "#E5E7EB", borderRadius: 4 }} />
-             </div>
-             
-             {template.schema?.sections?.map((section: any, idx: number) => (
-                <div key={idx} style={{ marginBottom: 20, opacity: section.type.includes('header') || section.type.includes('footer') ? 0.3 : 1 }}>
-                   <div style={{ height: 8, width: 60, background: "#F3F4F6", borderRadius: 4, marginBottom: 12 }} />
-                   <div style={{ padding: 12, border: "0.5px dashed #E5E7EB", borderRadius: 8 }}>
-                      <p style={{ fontSize: 10, color: "#9CA3AF", textTransform: "uppercase", fontWeight: 600 }}>{section.label || section.type.replace('_', ' ')}</p>
-                      {section.fields && (
-                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
-                            {section.fields.slice(0, 4).map((f: any, i: number) => (
-                               <div key={i} style={{ height: 14, background: "#F9FAFB", borderRadius: 4 }} />
-                            ))}
-                         </div>
-                      )}
-                      {section.type === 'table' && (
-                         <div style={{ marginTop: 12 }}>
-                            <div style={{ height: 20, background: "#F3F4F6", borderRadius: 4, marginBottom: 4 }} />
-                            <div style={{ height: 14, background: "#F9FAFB", borderRadius: 4, marginBottom: 4 }} />
-                            <div style={{ height: 14, background: "#F9FAFB", borderRadius: 4 }} />
-                         </div>
-                      )}
-                   </div>
-                </div>
-             ))}
-             <p style={{ textAlign: "center", fontSize: 11, color: "#9CA3AF", marginTop: 20 }}>— End of Preview —</p>
-          </div>
-        </div>
-
-        <div style={{ padding: "16px 24px", borderTop: "0.5px solid #E5E7EB", background: "white", display: "flex", justifyContent: "flex-end", gap: 12 }}>
-          <button onClick={onClose} style={{ padding: "10px 20px", borderRadius: 10, border: "0.5px solid #E5E7EB", background: "white", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-            Close
-          </button>
-          <button 
-            style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#1D4ED8", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-            onClick={() => {
-              onClose();
-              window.location.href = `/dashboard/documents/create/${template.slug}`;
-            }}
-          >
-            Create with Template
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const SAMPLE_BRAND: BrandProfile = {
+  id: "sample",
+  user: "sample",
+  company_name: "Acme Corp",
+  tagline: "Innovating the Future",
+  logo: null,
+  email: "hello@acme.com",
+  phone: "+1 (555) 000-0000",
+  website: "www.acme.com",
+  address: "123 Innovation Way",
+  city: "San Francisco",
+  country: "USA",
+  primary_color: "#1D4ED8",
+  secondary_color: "#1E293B",
+  accent_color: "#F59E0B",
+  text_color: "#111827",
+  background_color: "#FFFFFF",
+  heading_font: "inter",
+  body_font: "inter",
+  base_font_size: 11,
+  footer_text: "{{company_name}} • {{website}} • {{email}}",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+};
 
 /* ─── Main Page ──────────────────────────────────────────────── */
 export default function BrandsPage() {
   const { setHeaderTitle, setCta } = useDashboard();
   const router = useRouter();
   const [brands, setBrands] = useState<BrandProfile[]>([]);
-  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [brandTemplates, setBrandTemplates] = useState<BrandTemplate[]>([]);
+  const [activeKit, setActiveKit] = useState<UserBrandKit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewTemplate, setPreviewTemplate] = useState<DocumentTemplate | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
 
   useEffect(() => {
     setHeaderTitle("Brands");
     setCta({
-      label: "Create Brand",
+      label: "Create Profile",
       onClick: () => console.log("Create Brand clicked"),
       icon: <Plus size={14} />
     });
@@ -222,14 +111,16 @@ export default function BrandsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [brandsData, templatesData] = await Promise.all([
+        const [brandsData, templatesData, kitData] = await Promise.all([
           api.get("/api/base/brand-profiles/"),
-          api.get("/api/base/templates/"),
+          getBrandTemplates(),
+          getBrandKit().catch(() => null), // If no kit yet, ignore error
         ]);
-        setBrands(brandsData?.results);
-        setTemplates(templatesData?.results);
+        setBrands(brandsData?.results || []);
+        setBrandTemplates(templatesData?.results || []);
+        setActiveKit(kitData);
       } catch (err: any) {
-        setError(err.message || "Failed to load data");
+        setError(err.message || "Failed to load branding data");
       } finally {
         setLoading(false);
       }
@@ -243,160 +134,164 @@ export default function BrandsPage() {
     };
   }, [setHeaderTitle, setCta]);
 
+  const handleSelectTemplate = async (template: BrandTemplate) => {
+    try {
+      setIsSelecting(true);
+      await selectTemplate(template.id);
+      // Redirect to the editor after initial selection
+      router.push("/dashboard/brands/editor");
+    } catch (err: any) {
+      alert(err.message || "Failed to select template");
+    } finally {
+      setIsSelecting(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 400 }}>
-        <Loader2 className="animate-spin" size={32} color="#1D4ED8" />
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-primary" size={32} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ padding: 20, textAlign: "center", color: "#EF4444" }}>
-        <p>{error}</p>
+      <div className="p-10 text-center">
+        <div className="text-red-500 font-medium mb-4">{error}</div>
         <button
           onClick={() => window.location.reload()}
-          style={{ marginTop: 10, padding: "8px 16px", background: "#1D4ED8", color: "white", borderRadius: 8, border: "none", cursor: "pointer" }}
+          className="px-4 py-2 bg-brand-primary text-white rounded-lg shadow-sm hover:shadow-md transition-all font-semibold"
         >
-          Retry
+          Retry Connection
         </button>
       </div>
     );
   }
 
   return (
-    <div style={{ animation: "fadeIn 0.4s ease-out" }}>
-      {/* Welcome Banner */}
-      <div style={{
-        background: "linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)",
-        borderRadius: 16, padding: "32px 40px", marginBottom: 32,
-        position: "relative", overflow: "hidden", color: "white"
-      }}>
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 500 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: "-0.02em" }}>
-            Design your identity with Brand Templates
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Premium Welcome Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-brand-primary rounded-2xl p-10 mb-10 text-white shadow-xl shadow-blue-100">
+        <div className="relative z-10 max-w-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-blue-200" />
+            <span className="text-xs font-bold tracking-widest uppercase text-blue-100">Identity Management</span>
+          </div>
+          <h2 className="text-3xl font-extrabold mb-4 tracking-tight leading-tight">
+            Design your professional identity with Brand Templates
           </h2>
-          <p style={{ fontSize: 15, opacity: 0.9, lineHeight: 1.5, marginBottom: 20 }}>
-            Choose from professionally crafted brand kits or build your own from scratch.
-            All templates include synchronized color systems and optimized typography.
+          <p className="text-blue-50/90 text-lg mb-6 leading-relaxed">
+            Professionally crafted layouts for your documentation.
+            Maintain a consistent, world-class image across every department.
           </p>
-          <div style={{ display: "flex", gap: 12 }}>
-            <button style={{
-              background: "white", color: "#1D4ED8", padding: "10px 20px",
-              borderRadius: 10, border: "none", fontSize: 13.5, fontWeight: 600,
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 8
-            }}>
-              Browse Catalog <ExternalLink size={14} />
+          <div className="flex flex-wrap gap-4">
+            <button className="bg-white text-brand-primary px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-lg shadow-black/5">
+              Explore Catalog <Zap size={16} />
             </button>
+            {activeKit && (
+              <button
+                onClick={() => router.push("/dashboard/brands/editor")}
+                className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/20 transition-colors flex items-center gap-2"
+              >
+                Open Visual Editor <Settings size={16} />
+              </button>
+            )}
           </div>
         </div>
-        <Palette
-          size={200}
-          style={{
-            position: "absolute", right: -40, top: -40,
-            opacity: 0.1, color: "white", transform: "rotate(-15deg)"
-          }}
-        />
+
+        {/* Abstract shapes */}
+        <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+            <Palette size={240} />
+        </div>
+        <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Active Brands Section */}
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: "#111827", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-        My Active Identities
-        <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF", background: "#F3F4F6", padding: "2px 8px", borderRadius: 10 }}>
-          {brands.length}
-        </span>
-      </h3>
+      {/* Active Identities SECTION */}
+      <div className="mb-12">
+        <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-lg font-bold text-slate-900">Registered Brand Profiles</h3>
+            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                {brands.length} Total
+            </span>
+        </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20, marginBottom: 40 }}>
-        {brands.map(brand => (
-          <div key={brand.id} style={{
-            background: "white", borderRadius: 14, border: "0.5px solid #E5E7EB",
-            padding: 20, display: "flex", alignItems: "center", gap: 16,
-            boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-          }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12, background: brand.primary_color,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "white", fontSize: 16, fontWeight: 700
-            }}>
-              {brand.company_name.charAt(0)}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#111827", marginBottom: 2 }}>{brand.company_name}</div>
-              <div style={{ fontSize: 12, color: "#9CA3AF" }}>{brand.tagline || "Brand Identity"}</div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{
-                padding: "6px 12px", borderRadius: 8, background: "#ECFDF5",
-                color: "#166534", fontSize: 12, fontWeight: 600, border: "none",
-                display: "flex", alignItems: "center", gap: 4
-              }}>
-                <CheckCircle2 size={12} /> Active
-              </button>
-              <button style={{ height: 32, width: 32, borderRadius: 8, border: "0.5px solid #E5E7EB", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280" }}>
-                <MoreVertical size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
-        {brands.length === 0 && (
-          <div style={{
-            gridColumn: "span 2", padding: 40, textAlign: "center", border: "1px dashed #E5E7EB", borderRadius: 14, color: "#9CA3AF"
-          }}>
-            <p>No identities found. Create your first brand profile to get started.</p>
-          </div>
-        )}
-        <div style={{
-          border: "1px dashed #E5E7EB", borderRadius: 14,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 10, color: "#9CA3AF", cursor: "pointer", transition: "all 0.1s",
-          padding: 20
-        }}>
-           <Plus size={18} />
-           <span style={{ fontSize: 14, fontWeight: 500 }}>Add Another Identity</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {brands.map(brand => (
+                <div key={brand.id} className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
+                    <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-black shadow-inner"
+                        style={{ background: `linear-gradient(135deg, ${brand.primary_color}, ${brand.secondary_color})` }}
+                    >
+                        {brand.company_name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="text-slate-900 font-bold text-lg leading-tight group-hover:text-brand-primary transition-colors">{brand.company_name}</h4>
+                        <p className="text-slate-400 text-sm font-medium">{brand.tagline || "Brand Identity System"}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-100 uppercase tracking-wide">
+                            <CheckCircle2 size={14} /> Active
+                        </button>
+                        <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition-colors">
+                            <MoreVertical size={18} />
+                        </button>
+                    </div>
+                </div>
+            ))}
+
+            <button className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex items-center justify-center gap-3 text-slate-400 hover:text-brand-primary hover:border-brand-primary hover:bg-blue-50/50 transition-all group">
+                <Plus className="w-5 h-5 transition-transform group-hover:scale-125" />
+                <span className="font-bold text-sm uppercase tracking-widest">Register New Identity</span>
+            </button>
         </div>
       </div>
 
-      {/* Catalog Section */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: "#111827", display: "flex", alignItems: "center", gap: 8 }}>
-          <LayoutTemplate size={18} color="#1D4ED8" />
-          Template Library
-        </h3>
-        <button style={{ fontSize: 13, color: "#1D4ED8", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>
-          View Full Library
-        </button>
+      {/* Template Library SECTION */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-8">
+            <div>
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <LayoutTemplate className="text-brand-primary" />
+                    Layout Library
+                </h3>
+                <p className="text-slate-500 font-medium">Select a base HTML architecture for your documents</p>
+            </div>
+
+            <div className="hidden md:flex gap-2 text-xs font-bold uppercase text-slate-400 tracking-widest">
+                <span>Filter: </span>
+                <button className="text-brand-primary">All</button>
+                <button className="hover:text-brand-primary transition-colors">Minimal</button>
+                <button className="hover:text-brand-primary transition-colors">Enterprise</button>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {brandTemplates.map(t => (
+                <TemplateCard
+                    key={t.id}
+                    template={t}
+                    selected={activeKit?.template?.id === t.id}
+                    onSelect={handleSelectTemplate}
+                    isSelecting={isSelecting}
+                />
+            ))}
+        </div>
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-        gap: 20
-      }}>
-        {templates.map(t => (
-          <TemplateCard 
-            key={t.id} 
-            template={t} 
-            onPreview={setPreviewTemplate}
-            onUse={(tmpl) => router.push(`/dashboard/documents/create/${tmpl.slug}`)}
-          />
-        ))}
+      {/* Editor Tip */}
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex items-start gap-4">
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-brand-primary shadow-sm border border-slate-100 flex-shrink-0">
+              <Zap size={20} />
+          </div>
+          <div>
+              <h5 className="text-sm font-bold text-slate-900">Dynamic Synchronization</h5>
+              <p className="text-xs text-slate-500 leading-relaxed mt-1">
+                  Our templates use dynamic placeholders. Once selected, you can use the <strong>Visual Editor</strong> to fine-tune
+                  the HTML and CSS. Changes are automatically reflected in all pending documents.
+              </p>
+          </div>
       </div>
-
-      {previewTemplate && (
-        <PreviewModal 
-          template={previewTemplate} 
-          onClose={() => setPreviewTemplate(null)} 
-        />
-      )}
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

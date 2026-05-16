@@ -39,3 +39,10 @@ export const api = {
   patch: (path: string, body: unknown) => fetchWithAuth(path, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (path: string) => fetchWithAuth(path, { method: "DELETE" }),
 };
+
+// --- Brand Templating API ---
+export const getBrandTemplates = () => api.get("/api/base/brand-templates/");
+export const getBrandKit = () => api.get("/api/base/brand-kit/");
+export const selectTemplate = (templateId: string) => api.post("/api/base/brand-kit/select/", { template_id: templateId });
+export const saveBrandKit = (data: { header_html?: string; footer_html?: string; template_css?: string }) => 
+  api.patch("/api/base/brand-kit/save/", data);
