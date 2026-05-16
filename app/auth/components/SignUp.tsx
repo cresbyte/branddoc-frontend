@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { registerWithEmail, loginWithGoogle } from "@/lib/auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/lib/AuthContext";
+import { TextField } from "@/components/DesignSystem/TextField";
+import { Button } from "@/components/DesignSystem/Button";
 
 interface SignUpProps {
   onSignIn: () => void;
@@ -60,36 +62,25 @@ export function SignUp({ onSignIn, onForgot, onSuccess }: SignUpProps) {
   };
 
   return (
-    <div style={{ width: "100%" }}>
-      <div style={{ textAlign: "left", marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0F172A", marginBottom: 8, letterSpacing: "-0.02em" }}>
+    <div className="w-full max-w-sm mx-auto animate-in fade-in duration-500">
+      <div className="text-left mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">
           Create your account
         </h1>
-        <p style={{ color: "#64748B", fontSize: 15 }}>
+        <p className="text-slate-500 text-base">
           Start your 14-day free trial today.
         </p>
       </div>
 
       {error && (
-        <div style={{ 
-          padding: "12px 16px", 
-          background: "#FEF2F2", 
-          border: "1px solid #FEE2E2", 
-          borderRadius: 10, 
-          color: "#B91C1C", 
-          fontSize: 14, 
-          marginBottom: 24,
-          display: "flex",
-          alignItems: "center",
-          gap: 10
-        }}>
+        <div className="p-4 bg-red-50 border border-red-100 rounded-[10px] text-red-600 text-sm mb-6 flex items-center gap-3 animate-in shake-in duration-300">
           {error}
         </div>
       )}
 
       {step === 1 ? (
-        <>
-          <div style={{ marginBottom: 24 }}>
+        <div className="space-y-6">
+          <div className="w-full overflow-hidden rounded-[10px] border border-slate-200">
             <GoogleLogin
               onSuccess={onGoogleSuccess}
               onError={() => setError("Google sign up failed")}
@@ -102,172 +93,100 @@ export function SignUp({ onSignIn, onForgot, onSuccess }: SignUpProps) {
             />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <div style={{ flex: 1, height: 1, background: "#F1F5F9" }} />
-            <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>or</span>
-            <div style={{ flex: 1, height: 1, background: "#F1F5F9" }} />
+          <div className="flex items-center gap-4 text-slate-300">
+            <div className="flex-1 h-px bg-slate-100" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">or</span>
+            <div className="flex-1 h-px bg-slate-100" />
           </div>
 
-          <form onSubmit={handleContinue} style={{ textAlign: "left" }}>
-            <div style={{ marginBottom: 20 }}>
-              <label htmlFor="email" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
-                Work Email
-              </label>
-              <div style={{ position: "relative" }}>
-                <Mail size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  autoFocus
-                  style={{
-                    width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
-                    padding: "0 14px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
-                    outline: "none", boxSizing: "border-box", color: "#0F172A"
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.border = "1.5px solid #0F172A";
-                    e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.border = "1.5px solid #E2E8F0";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                />
-              </div>
-            </div>
-            <button
+          <form onSubmit={handleContinue} className="space-y-5">
+            <TextField
+              label="Work Email"
+              type="email"
+              icon={Mail}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              autoFocus
+              required
+            />
+            <Button
               type="submit"
               disabled={!email}
-              style={{
-                width: "100%", height: 48, borderRadius: 10, border: "none",
-                background: email ? "#0F172A" : "#94A3B8", color: "#fff",
-                fontSize: 16, fontWeight: 600, cursor: email ? "pointer" : "default",
-                transition: "all 0.2s",
-                boxShadow: email ? "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" : "none"
-              }}
+              className="w-full"
             >
               Get started
-            </button>
+            </Button>
           </form>
-        </>
+        </div>
       ) : (
-        <form onSubmit={handleSubmit} style={{ textAlign: "left" }}>
-          <div style={{ marginBottom: 24 }}>
+        <form onSubmit={handleSubmit} className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+          <div>
             <button
               type="button"
               onClick={() => { setStep(1); setError(""); }}
-              style={{
-                background: "rgba(15, 23, 42, 0.05)", border: "none", color: "#475569",
-                fontSize: 14, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 8, 
-                padding: "6px 12px", borderRadius: 8, cursor: "pointer", transition: "all 0.2s"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = "rgba(15, 23, 42, 0.08)"}
-              onMouseOut={(e) => e.currentTarget.style.background = "rgba(15, 23, 42, 0.05)"}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100/50 hover:bg-slate-100 rounded-lg text-slate-600 text-sm font-medium transition-colors"
             >
               <ArrowLeft size={14} /> {email}
             </button>
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <label htmlFor="name" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
-              Full Name
-            </label>
-            <div style={{ position: "relative" }}>
-              <User size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                autoFocus
-                style={{
-                  width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
-                  padding: "0 14px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
-                  outline: "none", boxSizing: "border-box", color: "#0F172A"
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.border = "1.5px solid #0F172A";
-                  e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.border = "1.5px solid #E2E8F0";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
-            </div>
-          </div>
+          <div className="space-y-5">
+            <TextField
+              label="Full Name"
+              type="text"
+              icon={User}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Doe"
+              autoFocus
+              required
+            />
 
-          <div style={{ marginBottom: 24 }}>
-            <label htmlFor="password" style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
-              Create Password
-            </label>
-            <div style={{ position: "relative" }}>
-              <Lock size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-              <input
-                id="password"
+            <div className="relative">
+              <TextField
+                label="Create Password"
                 type={showPassword ? "text" : "password"}
+                icon={Lock}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                style={{
-                  width: "100%", height: 48, borderRadius: 10, border: "1.5px solid #E2E8F0",
-                  padding: "0 44px 0 44px", fontSize: 15, background: "#fff", transition: "all 0.2s",
-                  outline: "none", boxSizing: "border-box", color: "#0F172A"
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.border = "1.5px solid #0F172A";
-                  e.currentTarget.style.boxShadow = "0 0 0 4px rgba(15, 23, 42, 0.05)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.border = "1.5px solid #E2E8F0";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ 
-                  position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", 
-                  background: "none", border: "none", color: "#94A3B8", cursor: "pointer", padding: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}
+                className="absolute right-3.5 bottom-3 text-slate-400 hover:text-slate-900 transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || !name || !password}
-            style={{
-              width: "100%", height: 48, borderRadius: 10, border: "none",
-              background: (name && password) ? "#0F172A" : "#94A3B8", color: "#fff",
-              fontSize: 16, fontWeight: 600, cursor: (name && password) ? "pointer" : "default",
-              transition: "all 0.2s",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              boxShadow: (name && password) ? "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" : "none"
-            }}
-          >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : "Complete Sign Up"}
-          </button>
-          
-          <p style={{ marginTop: 16, fontSize: 12, color: "#94A3B8", textAlign: "center", lineHeight: 1.5 }}>
-            By creating an account, you agree to our <span style={{ textDecoration: "underline", cursor: "pointer" }}>Terms of Service</span> and <span style={{ textDecoration: "underline", cursor: "pointer" }}>Privacy Policy</span>.
-          </p>
+            <Button
+              type="submit"
+              loading={loading}
+              disabled={!name || !password}
+              className="w-full"
+            >
+              Complete Sign Up
+            </Button>
+
+            <p className="px-4 text-[11px] text-slate-400 text-center leading-relaxed font-medium">
+              By creating an account, you agree to our{" "}
+              <button type="button" className="underline hover:text-slate-600">Terms</button>{" "}
+              and{" "}
+              <button type="button" className="underline hover:text-slate-600">Privacy Policy</button>.
+            </p>
+          </div>
         </form>
       )}
 
       {step === 1 && (
-        <p style={{ marginTop: 32, fontSize: 15, color: "#64748B", textAlign: "center" }}>
+        <p className="mt-10 text-center text-slate-500 text-[15px]">
           Already have an account?{" "}
           <button 
             onClick={onSignIn} 
-            style={{ background: "none", border: "none", color: "#0F172A", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 15 }}
+            className="text-slate-900 font-bold hover:underline"
           >
             Sign in
           </button>

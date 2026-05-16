@@ -223,7 +223,7 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
                 <span className="text-[11px] font-bold uppercase tracking-wide">Pro Tip</span>
              </div>
              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Use <code>{{`{{company_name}}`}}</code> or other tokens to keep data dynamic. 
+                Use <code>{"{{company_name}}"}</code> or other tokens to keep data dynamic. 
                 Static text will be saved literally.
              </p>
           </div>

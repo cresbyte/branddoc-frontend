@@ -5,11 +5,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 async function fetchWithAuth(path: string, options: RequestInit = {}) {
   const token = getAccessToken();
   
-  const headers = {
-    "Content-Type": "application/json",
+  const isFormData = options.body instanceof FormData;
+  
+  const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
+    ...((options.headers as Record<string, string>) || {}),
   };
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -25,8 +30,11 @@ async function fetchWithAuth(path: string, options: RequestInit = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const error = data?.detail || data?.message || "An error occurred";
-    throw new Error(error);
+    const message = data?.detail || data?.message || "An error occurred";
+    const error: any = new Error(message);
+    error.status = res.status;
+    error.data = data;
+    throw error;
   }
 
   return data;
@@ -34,9 +42,12 @@ async function fetchWithAuth(path: string, options: RequestInit = {}) {
 
 export const api = {
   get: (path: string) => fetchWithAuth(path, { method: "GET" }),
-  post: (path: string, body: unknown) => fetchWithAuth(path, { method: "POST", body: JSON.stringify(body) }),
-  put: (path: string, body: unknown) => fetchWithAuth(path, { method: "PUT", body: JSON.stringify(body) }),
-  patch: (path: string, body: unknown) => fetchWithAuth(path, { method: "PATCH", body: JSON.stringify(body) }),
+  post: (path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "POST", body: body instanceof FormData ? body : JSON.stringify(body) }),
+  put: (path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body) }),
+  patch: (path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body) }),
   delete: (path: string) => fetchWithAuth(path, { method: "DELETE" }),
 };
 
