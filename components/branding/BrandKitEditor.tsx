@@ -28,8 +28,8 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
     const gjsEditor = grapesjs.init({
       container: editorRef.current,
       fromElement: false,
-      height: "calc(100vh - 64px)",
-      width: "auto",
+      height: "100%",
+      width: "100%",
       storageManager: false, // We handle storage manually via API
       panels: { defaults: [] }, // We'll customize panels
       blockManager: {
@@ -93,7 +93,7 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
            data-gjs-removable="false" 
            data-gjs-copyable="false" 
            data-gjs-selectable="false"
-           style="height: 300px; margin: 40px 0; background: #f8fafc; border: 2px dashed #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-family: sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">
+           style="height: 300px; margin: 40px 0; background: #FFFFFF; border: 2px dashed #E5E7EB; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-family: 'DM Sans', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500;">
         [ Dynamic Document Content Area ]
       </div>
       <div id="brand-footer-container" data-gjs-name="Footer Section">
@@ -159,43 +159,58 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900 overflow-hidden text-white">
-      {/* Editor Header */}
-      <div className="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6 shrink-0">
+    <div className="flex flex-col h-screen bg-[#F9FAFB] overflow-hidden text-[#111827]">
+      {/* Editor Header - Matching Dashboard Topbar */}
+      <div className="h-[52px] bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => router.back()}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="p-1.5 hover:bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg transition-colors text-[#6B7280] hover:text-[#111827]"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight">Visual Brand Designer</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Customize Identity Layout</p>
+          <div className="flex flex-col">
+            <h1 className="text-[15px] font-semibold tracking-tight text-[#111827] leading-none mb-0.5">Brand Visual Editor</h1>
+            <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wider font-bold">Headers & Footers</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 mr-4 bg-slate-900/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-            <Info size={14} className="text-blue-400" />
-            <span className="text-[11px] text-slate-400">Editing Header & Footer only</span>
+          <div className="hidden lg:flex items-center gap-2 mr-2 bg-[#F9FAFB] px-3 py-1.5 rounded-lg border border-[#E5E7EB]">
+            <Info size={14} className="text-[#2563EB]" />
+            <span className="text-[11px] font-medium text-[#6B7280]">Changes apply to all new documents</span>
           </div>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-brand-primary hover:bg-blue-600 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+            style={{
+              background: "#1D4ED8",
+              color: "#fff",
+              border: "none",
+              borderRadius: 7,
+              height: 32,
+              padding: "0 14px",
+              fontSize: 13,
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              transition: "opacity 0.2s"
+            }}
+            className="hover:opacity-90 disabled:opacity-50"
           >
-            {isSaving ? "Syncing..." : <>Save Changes <Save size={16} /></>}
+            {isSaving ? "Saving..." : <><Save size={14} /> Save Changes</>}
           </button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Blocks & Components */}
-        <div className="w-72 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-700 flex items-center gap-2 opacity-50">
-             <Layout size={16} />
-             <span className="text-xs font-bold uppercase tracking-wider">Components</span>
+        <div className="w-72 bg-white border-r border-[#E5E7EB] flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b border-[#F3F4F6] flex items-center gap-2">
+             <Layout size={14} className="text-[#9CA3AF]" />
+             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]">Components</span>
           </div>
           <div id="blocks" className="flex-1 overflow-y-auto p-4 custom-scrollbar">
              {/* GrapesJS Blocks will be appended here */}
@@ -203,83 +218,114 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
         </div>
 
         {/* Main Canvas */}
-        <div className="flex-1 bg-slate-200 relative">
-          <div ref={editorRef} />
+        <div className="flex-1 bg-[#F1F5F9] relative p-8 overflow-auto flex flex-col items-center">
+          <div 
+            ref={editorRef} 
+            className="w-full max-w-[850px] bg-white rounded-xl shadow-sm border border-[#E5E7EB]" 
+            style={{ minHeight: "800px" }}
+          />
         </div>
 
         {/* Right Sidebar: Styles */}
-        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-700 flex items-center gap-2 opacity-50">
-             <Palette size={16} />
-             <span className="text-xs font-bold uppercase tracking-wider">Design System</span>
+        <div className="w-80 bg-white border-l border-[#E5E7EB] flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b border-[#F3F4F6] flex items-center gap-2">
+             <Palette size={14} className="text-[#9CA3AF]" />
+             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]">Design System</span>
           </div>
-          <div id="styles-container" className="flex-1 overflow-y-auto p-4 custom-scrollbar text-slate-300 text-sm">
+          <div id="styles-container" className="flex-1 overflow-y-auto p-4 custom-scrollbar text-[#4B5563] text-sm bg-white">
              {/* GrapesJS Style Manager will be appended here */}
           </div>
 
-          <div className="p-6 bg-slate-900/40 border-t border-slate-700">
-             <div className="flex items-center gap-2 text-amber-400 mb-2">
+          <div className="p-6 bg-[#FFFBEB]/50 border-t border-[#FDE68A]/40">
+             <div className="flex items-center gap-2 text-[#D97706] mb-2">
                 <Info size={14} />
-                <span className="text-[11px] font-bold uppercase tracking-wide">Pro Tip</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide">Brand Tokens</span>
              </div>
-             <p className="text-[11px] text-slate-500 leading-relaxed">
-                Use <code>{"{{company_name}}"}</code> or other tokens to keep data dynamic. 
-                Static text will be saved literally.
+             <p className="text-[11px] text-[#92400E] leading-relaxed opacity-80">
+                Drag <strong>tokens</strong> into your header or footer to keep info dynamic. 
+                They'll be replaced with your actual data when generating docs.
              </p>
           </div>
         </div>
       </div>
 
       <style jsx global>{`
+        /* Fix GrapesJS general backgrounds for Light Mode */
+        .gjs-one-bg { background-color: #FFFFFF !important; }
+        .gjs-two-bg { background-color: #F9FAFB !important; }
+        .gjs-three-bg { background-color: #EFF6FF !important; }
+        .gjs-four-color { color: #1D4ED8 !important; }
+        .gjs-four-color-h:hover { color: #2563EB !important; }
+
         .gjs-cv-canvas {
           top: 0;
           width: 100%;
           height: 100%;
+          background-color: transparent !important;
         }
+        
+        /* Sidebars Overrides */
+        #blocks, #styles-container {
+           background-color: #FFFFFF !important;
+        }
+
         .gjs-block {
           width: auto !important;
           min-height: auto !important;
-          padding: 8px !important;
-          background-color: #1e293b !important;
-          border: 1px solid #334155 !important;
-          color: #94a3b8 !important;
+          padding: 10px 12px !important;
+          background-color: #FFFFFF !important;
+          border: 0.5px solid #E5E7EB !important;
+          color: #4B5563 !important;
           border-radius: 8px !important;
           margin: 0 0 8px 0 !important;
           font-size: 12px !important;
+          font-weight: 500 !important;
           transition: all 0.2s !important;
           display: flex !important;
           align-items: center !important;
           gap: 10px !important;
           justify-content: flex-start !important;
+          box-shadow: none !important;
         }
         .gjs-block:hover {
-          background-color: #334155 !important;
-          color: white !important;
-          border-color: #1d4ed8 !important;
+          background-color: #F9FAFB !important;
+          color: #1D4ED8 !important;
+          border-color: #BFDBFE !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
         }
         .gjs-sm-sector-title {
           background-color: transparent !important;
-          border-bottom: 1px solid #334155 !important;
-          color: #f1f5f9 !important;
-          padding: 12px 0 !important;
-          font-weight: bold !important;
+          border-bottom: 0.5px solid #F3F4F6 !important;
+          color: #111827 !important;
+          padding: 14px 0 !important;
+          font-weight: 600 !important;
           text-transform: uppercase !important;
           font-size: 10px !important;
-          letter-spacing: 1px !important;
+          letter-spacing: 0.05em !important;
+        }
+        .gjs-sm-properties {
+          background-color: transparent !important;
         }
         .gjs-sm-property {
             border: none !important;
-            padding: 8px 0 !important;
+            padding: 10px 0 !important;
         }
         .gjs-sm-label {
-            color: #94a3b8 !important;
+            color: #6B7280 !important;
             font-size: 11px !important;
+            font-weight: 500 !important;
         }
         .gjs-field {
-            background-color: #0f172a !important;
-            border: 1px solid #334155 !important;
-            border-radius: 4px !important;
-            color: #f1f5f9 !important;
+            background-color: #F9FAFB !important;
+            border: 0.5px solid #E5E7EB !important;
+            border-radius: 6px !important;
+            color: #111827 !important;
+            font-size: 11.5px !important;
+            padding: 4px 8px !important;
+        }
+        .gjs-field-checkbox {
+            width: 14px !important;
+            height: 14px !important;
         }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
@@ -288,8 +334,25 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #334155;
-          border-radius: 2px;
+          background: #E5E7EB;
+          border-radius: 10px;
+        }
+        /* Hide GrapesJS default UI elements that look dated */
+        .gjs-sm-sector-caret {
+          color: #9CA3AF !important;
+        }
+        
+        /* Light style for tokens/blocks category titles */
+        .gjs-block-category, .gjs-sm-sector {
+          border-bottom: 0.5px solid #F3F4F6 !important;
+        }
+        .gjs-block-category .gjs-title, .gjs-sm-sector .gjs-title {
+          background-color: #F9FAFB !important;
+          color: #6B7280 !important;
+          font-size: 10px !important;
+          font-weight: 700 !important;
+          text-transform: uppercase !important;
+          padding: 8px 12px !important;
         }
       `}</style>
     </div>
