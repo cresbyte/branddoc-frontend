@@ -129,47 +129,88 @@ export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
     const gjsEditor = grapesjs.init({
       container: editorRef.current,
       fromElement: false,
-      height: "100%",
+      height: "1100px",
       width: "100%",
       storageManager: false,
-      dragMode: "absolute",
+      // NOTE: do NOT use dragMode: "absolute" — it takes all components out of
+      // document flow so the canvas body collapses to 0 height (blank white).
       panels: { defaults: [] },
       canvas: {
+        // Inject fonts + base body reset directly into the canvas iframe
         styles: [
           "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
         ],
+        scripts: [],
       },
     });
 
     const headerHtml = interpolate(initialKit?.header_html || initialKit?.template?.header_html || "", ctx);
     const footerHtml = interpolate(initialKit?.footer_html || initialKit?.template?.footer_html || "", ctx);
-    const cssContent = interpolate(initialKit?.template_css || initialKit?.template?.template_css || "", ctx);
+    const cssContent  = interpolate(initialKit?.template_css  || initialKit?.template?.template_css  || "", ctx);
 
-    const combinedContent = `
-      <style>
-        body { margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #ffffff; }
-        #brand-header-container { position: relative; min-height: 150px; width: 100%; padding: 20px; box-sizing: border-box; }
-        #brand-content-placeholder { flex: 1; min-height: 500px; }
-        #brand-footer-container { position: relative; min-height: 100px; width: 100%; padding: 20px; box-sizing: border-box; border-top: 1px solid #f1f5f9; }
-        ${cssContent}
-      </style>
-      <div id="brand-header-container" data-gjs-name="Header Section">
-        ${headerHtml}
+    // ── Fallback placeholder when template has no header/footer HTML ──────────
+    const safeHeader = headerHtml.trim() ||
+      `<div style="padding:20px;font-family:Inter,sans-serif;color:#94a3b8;font-size:14px;">
+         [No header content — use Insert to add elements]
+       </div>`;
+    const safeFooter = footerHtml.trim() ||
+      `<div style="padding:20px;font-family:Inter,sans-serif;color:#94a3b8;font-size:14px;">
+         [No footer content — use Insert to add elements]
+       </div>`;
+
+    // ── Pure HTML only — NO <style> tag here. ─────────────────────────────────
+    // GrapesJS's HTML parser chokes on <style> blocks inside setComponents(),
+    // silently dropping or collapsing all sibling elements to zero height.
+    // CSS goes through gjsEditor.setStyle() instead.
+    const htmlContent = `
+      <div id="brand-header-container" data-gjs-name="Header Section"
+           style="width:100%;min-height:80px;padding:20px;box-sizing:border-box;">
+        ${safeHeader}
       </div>
       <div id="brand-content-placeholder"
            data-gjs-draggable="false"
            data-gjs-removable="false"
            data-gjs-copyable="false"
            data-gjs-selectable="false"
-           style="margin: 40px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">
+           style="min-height:500px;margin:40px;background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-family:'Inter',sans-serif;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">
         [ Auto-Flowing Document Content ]
       </div>
-      <div id="brand-footer-container" data-gjs-name="Footer Section">
-        ${footerHtml}
+      <div id="brand-footer-container" data-gjs-name="Footer Section"
+           style="width:100%;min-height:60px;padding:20px;box-sizing:border-box;border-top:1px solid #f1f5f9;">
+        ${safeFooter}
       </div>
     `;
 
-    gjsEditor.setComponents(combinedContent);
+    // ── Base canvas body styles ───────────────────────────────────────────────
+    const baseCSS = `
+      * { box-sizing: border-box; }
+      body { margin:0; padding:0; background:#ffffff; font-family:'Inter',sans-serif; }
+      #brand-header-container { position:relative; }
+      #brand-footer-container { position:relative; }
+      ${cssContent}
+    `;
+
+    // ── Inject content once the canvas iframe document is ready ───────────────
+    // With storageManager:false the GrapesJS 'load' event fires synchronously
+    // INSIDE grapesjs.init() — before our on('load',...) listener is registered,
+    // so the callback is never invoked. Instead we poll until the canvas iframe
+    // document exists, then call setStyle/setComponents.
+    const injectContent = () => {
+      try {
+        const frameEl = gjsEditor.Canvas.getFrameEl() as HTMLIFrameElement | null;
+        const frameDoc = frameEl?.contentDocument ?? frameEl?.contentWindow?.document;
+        if (frameDoc && frameDoc.readyState !== 'loading' && frameDoc.body) {
+          gjsEditor.setStyle(baseCSS);
+          gjsEditor.setComponents(htmlContent);
+        } else {
+          // Canvas iframe not ready yet — retry on next animation frame
+          requestAnimationFrame(injectContent);
+        }
+      } catch {
+        requestAnimationFrame(injectContent);
+      }
+    };
+    requestAnimationFrame(injectContent);
 
     // Track selections to update toolbar
     gjsEditor.on('component:selected', (model: any) => {
@@ -186,6 +227,11 @@ export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
       if (gjsEditor.getSelected() === model) {
         setActiveStyles(model.getStyle());
       }
+    });
+
+    // Disable dragging for all components to protect template structure
+    gjsEditor.on('component:add', (model: any) => {
+      model.set({ draggable: false });
     });
 
     setEditor(gjsEditor);
@@ -325,22 +371,31 @@ export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
   }, [setExtra, activeComponent, activeStyles, zoom, handleInsert, handleUndo, handleRedo, handleZoom, toggleStyle, handleStyleChange, handleLayerMove]);
 
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-[#F9FAFB]">
-      <div className="flex-1 flex flex-col items-center p-8">
+    <div className="w-full font-sans">
+      <div className="flex flex-col items-center py-8">
         {/* ── Main Canvas Container ─────────────────────────────────────────── */}
           <div 
             ref={editorRef} 
-            className="w-full max-w-[850px] bg-white rounded shadow-sm border border-[#E5E7EB]" 
-            style={{ minHeight: "1100px" }}
+            className="w-full max-w-[850px] bg-white rounded shadow-md border border-[#E5E7EB]" 
+            style={{ 
+              height: "1100px",
+              minHeight: "1100px",
+              display: "block",
+              overflow: "hidden" 
+            }}
           />
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .gjs-one-bg { background-color: transparent !important; }
         .gjs-two-bg { background-color: transparent !important; }
         .gjs-three-bg { background-color: #e8f0fe !important; }
         .gjs-four-color { color: #1a73e8 !important; }
         .gjs-four-color-h:hover { color: #1557b0 !important; }
+
+        .gjs-editor-cont {
+          height: 1100px !important;
+        }
 
         .gjs-cv-canvas {
           top: 0;
@@ -349,9 +404,16 @@ export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
           background-color: transparent !important;
         }
 
-        /* Outline for active selections */
+        /* Hide all default dashed outlines for structural elements */
         .gjs-dashed *[data-gjs-highlightable] {
-            outline: 1px dashed rgba(170,170,170,0.5);
+            outline: none !important;
+        }
+
+        /* Show dashed outline ONLY for Text and Image elements on hover */
+        .gjs-dashed *[data-gjs-type="text"]:hover,
+        .gjs-dashed *[data-gjs-type="image"]:hover,
+        .gjs-dashed *[data-gjs-type="textnode"]:hover {
+            outline: 1px dashed rgba(170,170,170,0.5) !important;
             outline-offset: -2px;
         }
 
@@ -359,7 +421,7 @@ export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
             outline: 2px solid #1a73e8 !important;
             outline-offset: -2px;
         }
-      `}</style>
+      `}} />
     </div>
   );
 }

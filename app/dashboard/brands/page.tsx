@@ -277,6 +277,7 @@ export default function BrandsPage() {
               selected={activeKit?.template?.id === t.id}
               onSelect={handleSelectTemplate}
               isSelecting={isSelecting}
+              context={brands.length > 0 ? brands[0] : undefined}
             />
           ))}
         </div>

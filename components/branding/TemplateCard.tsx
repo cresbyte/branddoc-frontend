@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Edit2 } from "lucide-react";
+import { interpolate } from "@/lib/utils";
 
 interface Template {
   id: string;
@@ -18,9 +19,25 @@ interface TemplateCardProps {
   onSelect: (temp: Template) => void;
   selected?: boolean;
   isSelecting?: boolean;
+  context?: any;
 }
 
-export function TemplateCard({ template, onSelect, selected, isSelecting }: TemplateCardProps) {
+export function TemplateCard({ template, onSelect, selected, isSelecting, context }: TemplateCardProps) {
+  // Use provided context or a generic fallback for the preview
+  const ctx = context && Object.keys(context).length > 0 ? {
+    ...context,
+    logo_url: context.logo_url || context.logo
+  } : {
+    company_name: "Mockup Corp",
+    logo_url: "https://via.placeholder.com/150",
+    email: "hello@mockup.com",
+    website: "mockup.com"
+  };
+
+  const headerHtml = interpolate(template.header_html || "", ctx);
+  const footerHtml = interpolate(template.footer_html || "", ctx);
+  const templateCss = interpolate(template.template_css || "", ctx);
+
   // Combine CSS + Header + Spacer + Footer for the iframe preview
   const previewHtml = `
     <!DOCTYPE html>
@@ -28,18 +45,18 @@ export function TemplateCard({ template, onSelect, selected, isSelecting }: Temp
       <head>
         <style>
           body { margin: 0; padding: 0; font-family: sans-serif; }
-          ${template.template_css || ""}
+          ${templateCss}
         </style>
       </head>
       <body style="display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; justify-content: space-between; background: #ffffff;">
         <div style="width: 100%;">
-          ${template.header_html || ""}
+          ${headerHtml}
         </div>
         <div style="flex: 1; padding: 20px; color: #94a3b8; font-size: 14px; text-align: center; border-left: 1px dashed #cbd5e1; border-right: 1px dashed #cbd5e1; margin: 40px 60px; display: flex; align-items: center; justify-content: center; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">
           [ Document Content ]
         </div>
         <div style="width: 100%;">
-          ${template.footer_html || ""}
+          ${footerHtml}
         </div>
       </body>
     </html>
@@ -77,7 +94,7 @@ export function TemplateCard({ template, onSelect, selected, isSelecting }: Temp
           <iframe
             srcDoc={previewHtml}
             className="w-full h-full border-0"
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
           />
         </div>
         
