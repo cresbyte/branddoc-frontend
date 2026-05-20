@@ -58,7 +58,7 @@ export function BrandLayoutRenderer({
     position: "relative",
     borderTop: resolvedLayout.border_top ? `${resolvedLayout.border_top.thickness * scale}px solid ${resolvedLayout.border_top.color}` : "none",
     borderBottom: resolvedLayout.border_bottom ? `${resolvedLayout.border_bottom.thickness * scale}px solid ${resolvedLayout.border_bottom.color}` : "none",
-    overflow: "hidden"
+    overflow: "hidden",
   };
 
   if (resolvedLayout.border_top?.opacity) {

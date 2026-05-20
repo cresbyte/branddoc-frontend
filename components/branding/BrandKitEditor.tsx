@@ -1,125 +1,181 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import grapesjs from "grapesjs";
 import "grapesjs/dist/css/grapes.min.css";
-import { Save, ChevronLeft, Info, Type, Palette, Maximize, Layout } from "lucide-react";
+import { 
+  Save, Undo, Redo, ChevronDown, Layers, MoveUp, MoveDown,
+  AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { saveBrandKit } from "@/lib/api";
+import { useDashboard } from "@/app/dashboard/components/DashboardContext";
 
 interface BrandKitEditorProps {
-  initialKit: {
-    header_html: string;
-    footer_html: string;
-    template_css: string;
-  };
+  initialKit: any;
 }
+
+/* ── Primitives for Toolbar ────────────────────────────────────────────── */
+function Sep() {
+  return <div style={{ width: 1, height: 20, backgroundColor: "#e0e0e0", flexShrink: 0, margin: "0 4px" }} />;
+}
+
+function TBtn({ active, onClick, title, disabled, children, style }: {
+  active?: boolean; onClick?: () => void; title?: string;
+  disabled?: boolean; children: React.ReactNode; style?: React.CSSProperties;
+}) {
+  return (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); if (!disabled && onClick) onClick(); }}
+      title={title} disabled={disabled}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: 28, minWidth: 28, padding: "0 6px", border: "none", borderRadius: 4,
+        background: active ? "#e8f0fe" : "transparent",
+        color: disabled ? "#bdbdbd" : active ? "#1a73e8" : "#3c4043",
+        cursor: disabled ? "default" : "pointer", flexShrink: 0, gap: 4, fontSize: 13,
+        fontFamily: "'Google Sans', Arial, sans-serif", transition: "background 0.1s", ...style,
+      }}
+      onMouseEnter={(e) => { if (!disabled && !active) (e.currentTarget as HTMLElement).style.background = "#f1f3f4"; }}
+      onMouseLeave={(e) => { if (!disabled && !active) (e.currentTarget as HTMLElement).style.background = active ? "#e8f0fe" : "transparent"; }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GSelect({ value, onChange, options, title }: {
+  value: string | number; onChange: (v: string) => void;
+  options: (string | number)[]; title?: string;
+}) {
+  return (
+    <div title={title} style={{ position: "relative", display: "flex", alignItems: "center", height: 28, borderRadius: 4, padding: "0 8px", cursor: "pointer", flexShrink: 0, border: "1px solid transparent", transition: "border-color 0.1s, background 0.1s" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#f1f3f4"; (e.currentTarget as HTMLElement).style.borderColor = "#e0e0e0"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
+    >
+      <span style={{ fontSize: 13, color: "#3c4043", fontFamily: "'Google Sans', Arial, sans-serif", whiteSpace: "nowrap", pointerEvents: "none", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
+        {value}
+      </span>
+      <ChevronDown size={12} style={{ color: "#5f6368", marginLeft: 4, pointerEvents: "none", flexShrink: 0 }} />
+      <select value={value} onChange={(e) => onChange(e.target.value)} onMouseDown={(e) => e.stopPropagation()}
+        style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%" }}>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function ActionDropdown({ title, options, onAction }: { title: string, options: {label: string, value: string}[], onAction: (v: string) => void }) {
+  return (
+    <div title={title} style={{ position: "relative", display: "flex", alignItems: "center", height: 28, borderRadius: 4, padding: "0 8px", cursor: "pointer", flexShrink: 0, border: "1px solid transparent", transition: "border-color 0.1s, background 0.1s" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#e8f0fe"; (e.currentTarget as HTMLElement).style.borderColor = "#d2e3fc"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
+    >
+      <span style={{ fontSize: 13, color: "#1a73e8", fontWeight: 600, fontFamily: "'Google Sans', Arial, sans-serif", whiteSpace: "nowrap", pointerEvents: "none" }}>{title}</span>
+      <ChevronDown size={12} style={{ color: "#1a73e8", marginLeft: 4, pointerEvents: "none", flexShrink: 0 }} />
+      <select 
+         value="" 
+         onChange={(e) => { 
+           if(e.target.value) onAction(e.target.value); 
+           e.target.value = ""; 
+         }}
+         style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', height: "100%" }}
+      >
+        <option value="" disabled>Select...</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+const INSERT_OPTIONS = [
+  // Layouts
+  { label: "Text Block", value: '<div data-gjs-type="text" style="padding: 10px; font-family: Inter, sans-serif; min-width: 100px; min-height: 20px;">Text Block</div>' },
+  { label: "Image", value: '<img data-gjs-type="image" src="https://via.placeholder.com/150" style="max-width: 100%;" />' },
+  { label: "Empty Section", value: '<div style="padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 50px; background: #f8fafc; border: 1px dashed #cbd5e1; width: 100%;">Section</div>' },
+  { label: "Divider", value: '<hr style="border-top: 1px solid #cbd5e1; width: 100%; margin: 10px 0;" />' },
+  // Tokens
+  { label: "Token: Company Name", value: '<span style="font-family: inherit; font-weight: bold; color: inherit;">{{company_name}}</span>' },
+  { label: "Token: Brand Logo", value: '<img src="{{logo_url}}" style="max-height: 50px;" alt="Brand Logo" />' },
+  { label: "Token: Email", value: '<span style="font-family: inherit; color: inherit;">{{email}}</span>' },
+];
 
 export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [zoom, setZoom] = useState<number>(100);
+  
+  // Tracking element state
+  const [activeComponent, setActiveComponent] = useState<any>(null);
+  const [activeStyles, setActiveStyles] = useState<any>({});
+  
   const router = useRouter();
+  const { setHeaderTitle, setSearch, setCta, setExtra } = useDashboard();
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Use a unique ID for the container to avoid conflicts
     const gjsEditor = grapesjs.init({
       container: editorRef.current,
       fromElement: false,
       height: "100%",
       width: "100%",
-      storageManager: false, // We handle storage manually via API
-      panels: { defaults: [] }, // We'll customize panels
-      blockManager: {
-        appendTo: "#blocks",
-        blocks: [
-          {
-            id: "section",
-            label: "<b>Section</b>",
-            attributes: { class: "gjs-block-section" },
-            content: `<section style="padding: 20px; display: flex; align-items: center; justify-content: center;">New Section</section>`,
-          },
-          {
-            id: "text",
-            label: "Text",
-            content: '<div data-gjs-type="text">Insert your text here</div>',
-          },
-          {
-            id: "image",
-            label: "Image",
-            select: true,
-            content: { type: "image" },
-            activate: true,
-          },
-        ],
-      },
-      styleManager: {
-        appendTo: "#styles-container",
-        sectors: [
-          {
-            name: "Dimension",
-            open: false,
-            buildProps: ["width", "height", "max-width", "min-height", "margin", "padding"],
-          },
-          {
-            name: "Typography",
-            open: false,
-            buildProps: ["font-family", "font-size", "font-weight", "letter-spacing", "color", "line-height", "text-align", "text-decoration", "text-shadow"],
-          },
-          {
-            name: "Decorations",
-            open: false,
-            buildProps: ["border-radius-c", "background-color", "border-radius", "border", "box-shadow", "background"],
-          },
-          {
-            name: "Extra",
-            open: false,
-            buildProps: ["transition", "perspective", "transform"],
-          },
-        ],
-      },
+      storageManager: false,
+      dragMode: "absolute",
+      panels: { defaults: [] }, 
+      canvas: {
+         styles: [
+             "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+         ]
+      }
     });
 
-    // --- SETUP INITIAL CONTENT ---
+    const headerHtml = initialKit?.header_html || initialKit?.template?.header_html || "";
+    const footerHtml = initialKit?.footer_html || initialKit?.template?.footer_html || "";
+    const cssContent = initialKit?.template_css || initialKit?.template?.template_css || "";
+
     const combinedContent = `
-      <style>${initialKit.template_css || ""}</style>
+      <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #ffffff; }
+        #brand-header-container { position: relative; min-height: 150px; width: 100%; padding: 20px; box-sizing: border-box; }
+        #brand-content-placeholder { flex: 1; min-height: 500px; }
+        #brand-footer-container { position: relative; min-height: 100px; width: 100%; padding: 20px; box-sizing: border-box; border-top: 1px solid #f1f5f9; }
+        ${cssContent}
+      </style>
       <div id="brand-header-container" data-gjs-name="Header Section">
-        ${initialKit.header_html || ""}
+        ${headerHtml}
       </div>
       <div id="brand-content-placeholder" 
            data-gjs-draggable="false" 
            data-gjs-removable="false" 
            data-gjs-copyable="false" 
            data-gjs-selectable="false"
-           style="height: 300px; margin: 40px 0; background: #FFFFFF; border: 2px dashed #E5E7EB; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-family: 'DM Sans', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500;">
-        [ Dynamic Document Content Area ]
+           style="margin: 40px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">
+        [ Auto-Flowing Document Content ]
       </div>
       <div id="brand-footer-container" data-gjs-name="Footer Section">
-        ${initialKit.footer_html || ""}
+        ${footerHtml}
       </div>
     `;
 
     gjsEditor.setComponents(combinedContent);
 
-    // Add Brand Tokens (Placeholders)
-    const bm = gjsEditor.BlockManager;
-    bm.add("token-company", {
-      label: "Company Name",
-      category: "Brand Tokens",
-      content: "<span>{{company_name}}</span>",
-      attributes: { class: "fa fa-building" },
+    // Track selections to update toolbar
+    gjsEditor.on('component:selected', (model: any) => {
+      setActiveComponent(model);
+      setActiveStyles(model.getStyle());
     });
-    bm.add("token-logo", {
-        label: "Brand Logo",
-        category: "Brand Tokens",
-        content: '<img src="{{logo_url}}" style="max-height: 50px;" />',
+    
+    gjsEditor.on('component:deselected', () => {
+      setActiveComponent(null);
+      setActiveStyles({});
     });
-    bm.add("token-email", {
-        label: "Email",
-        category: "Brand Tokens",
-        content: "<span>{{email}}</span>",
+    
+    gjsEditor.on('component:update:style', (model: any) => {
+       if (gjsEditor.getSelected() === model) {
+           setActiveStyles(model.getStyle());
+       }
     });
 
     setEditor(gjsEditor);
@@ -129,133 +185,152 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
     };
   }, [initialKit]);
 
-  const handleSave = async () => {
-    if (!editor) return;
+  // Actions
+  const handleUndo = useCallback(() => editor?.runCommand("core:undo"), [editor]);
+  const handleRedo = useCallback(() => editor?.runCommand("core:redo"), [editor]);
+  
+  const handleInsert = useCallback((htmlString: string) => {
+     if (!editor) return;
+     const target = editor.getSelected() || editor.getWrapper().find('#brand-header-container')[0] || editor.getWrapper();
+     const newComponent = target.append(htmlString);
+     if(newComponent && newComponent.length > 0) {
+        editor.select(newComponent[0]);
+     }
+  }, [editor]);
 
+  const handleStyleChange = useCallback((prop: string, value: string) => {
+      if (!activeComponent) return;
+      activeComponent.addStyle({ [prop]: value });
+  }, [activeComponent]);
+  
+  const toggleStyle = useCallback((prop: string, activeValue: string, inactiveValue: string = '') => {
+      if (!activeComponent) return;
+      const current = activeComponent.getStyle()[prop];
+      activeComponent.addStyle({ [prop]: current === activeValue ? inactiveValue : activeValue });
+  }, [activeComponent]);
+
+  const handleLayerMove = useCallback((direction: 'up' | 'down') => {
+      if (!activeComponent) return;
+      const currentZ = parseInt(activeComponent.getStyle()['z-index'] || '0');
+      activeComponent.addStyle({ 'z-index': direction === 'up' ? currentZ + 1 : currentZ - 1 });
+  }, [activeComponent]);
+
+  const handleZoom = useCallback((val: string) => {
+     if (!editor) return;
+     const zoomLevel = parseInt(val.replace('%',''));
+     setZoom(zoomLevel);
+     editor.Canvas.setZoom(zoomLevel);
+  }, [editor]);
+
+  const handleSave = useCallback(async () => {
+    if (!editor) return;
     try {
       setIsSaving(true);
-      
-      // Extract bits back
       const wrapper = editor.getWrapper();
       const header = wrapper.find("#brand-header-container")[0];
       const footer = wrapper.find("#brand-footer-container")[0];
       
-      const headerHtml = header ? header.toHTML() : "";
-      const footerHtml = footer ? footer.toHTML() : "";
-      const css = editor.getCss();
-
       await saveBrandKit({
-        header_html: headerHtml,
-        footer_html: footerHtml,
-        template_css: css,
+        header_html: header ? header.toHTML() : "",
+        footer_html: footer ? footer.toHTML() : "",
+        template_css: editor.getCss(),
       });
-
       alert("Brand kit saved successfully!");
     } catch (err: any) {
       alert(err.message || "Failed to save brand kit");
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editor]);
+
+  // Dashboard Header Integration
+  useEffect(() => {
+    setHeaderTitle("Brand Visual Editor");
+    setSearch({ hidden: true });
+    
+    return () => {
+      setHeaderTitle("");
+      setSearch({ hidden: false });
+      setCta(null);
+      setExtra(null);
+    };
+  }, [setHeaderTitle, setSearch, setCta, setExtra]);
+
+  useEffect(() => {
+    setCta({
+      label: isSaving ? "Saving..." : "Save Changes",
+      onClick: handleSave,
+      icon: <Save size={14} />
+    });
+  }, [isSaving, handleSave, setCta]);
+
+  useEffect(() => {
+    setExtra(
+      <div style={{ display: "flex", alignItems: "center", gap: 1, padding: "0 8px" }}>
+         <ActionDropdown title="Insert" options={INSERT_OPTIONS} onAction={handleInsert} />
+         <Sep />
+         <TBtn title="Undo (Ctrl+Z)" onClick={handleUndo}><Undo size={15} /></TBtn>
+         <TBtn title="Redo (Ctrl+Y)" onClick={handleRedo}><Redo size={15} /></TBtn>
+         <Sep />
+         <GSelect value={zoom + "%"} onChange={handleZoom} options={["50%","75%","90%","100%","125%","150%","200%"]} title="Zoom" />
+         <Sep />
+         <TBtn active={activeStyles['font-weight'] === 'bold'} onClick={() => toggleStyle('font-weight', 'bold', 'normal')} disabled={!activeComponent} title="Bold"><Bold size={14} strokeWidth={2.5}/></TBtn>
+         <TBtn active={activeStyles['font-style'] === 'italic'} onClick={() => toggleStyle('font-style', 'italic', 'normal')} disabled={!activeComponent} title="Italic"><Italic size={14} /></TBtn>
+         <TBtn active={activeStyles['text-decoration'] === 'underline'} onClick={() => toggleStyle('text-decoration', 'underline', 'none')} disabled={!activeComponent} title="Underline"><Underline size={14} /></TBtn>
+         <Sep />
+         <TBtn active={activeStyles['text-align'] === 'left'} onClick={() => handleStyleChange('text-align', 'left')} disabled={!activeComponent} title="Align Left"><AlignLeft size={14} /></TBtn>
+         <TBtn active={activeStyles['text-align'] === 'center'} onClick={() => handleStyleChange('text-align', 'center')} disabled={!activeComponent} title="Align Center"><AlignCenter size={14} /></TBtn>
+         <TBtn active={activeStyles['text-align'] === 'right'} onClick={() => handleStyleChange('text-align', 'right')} disabled={!activeComponent} title="Align Right"><AlignRight size={14} /></TBtn>
+         <Sep />
+         
+         {/* Color Pickers */}
+         <div style={{ display: "flex", alignItems: "center", position: "relative" }} title="Text Color">
+            <TBtn disabled={!activeComponent}>
+               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>A</span>
+                  <div style={{ width: 13, height: 3, backgroundColor: activeStyles['color'] || "#000000", borderRadius: 1 }} />
+               </div>
+            </TBtn>
+            {activeComponent && (
+               <input type="color" value={activeStyles['color'] || "#000000"} onChange={(e) => handleStyleChange('color', e.target.value)} style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+            )}
+         </div>
+
+         <div style={{ display: "flex", alignItems: "center", position: "relative" }} title="Background Color">
+            <TBtn disabled={!activeComponent}>
+               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, backgroundColor: activeStyles['background-color'] || "#ffffff", border: '1px solid #ccc', width: 14, height: 14, borderRadius: 2 }} />
+               </div>
+            </TBtn>
+            {activeComponent && (
+               <input type="color" value={activeStyles['background-color'] || "#ffffff"} onChange={(e) => handleStyleChange('background-color', e.target.value)} style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+            )}
+         </div>
+
+         <Sep />
+         <TBtn disabled={!activeComponent} title="Bring Forward" onClick={() => handleLayerMove('up')}><MoveUp size={14} /> <span style={{fontSize: 11}}>Bring Forward</span></TBtn>
+         <TBtn disabled={!activeComponent} title="Send Backward" onClick={() => handleLayerMove('down')}><MoveDown size={14} /> <span style={{fontSize: 11}}>Send Backward</span></TBtn>
+      </div>
+    );
+  }, [setExtra, activeComponent, activeStyles, zoom, handleInsert, handleUndo, handleRedo, handleZoom, toggleStyle, handleStyleChange, handleLayerMove]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#F9FAFB] overflow-hidden text-[#111827]">
-      {/* Editor Header - Matching Dashboard Topbar */}
-      <div className="h-[52px] bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => router.back()}
-            className="p-1.5 hover:bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg transition-colors text-[#6B7280] hover:text-[#111827]"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <div className="flex flex-col">
-            <h1 className="text-[15px] font-semibold tracking-tight text-[#111827] leading-none mb-0.5">Brand Visual Editor</h1>
-            <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wider font-bold">Headers & Footers</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 mr-2 bg-[#F9FAFB] px-3 py-1.5 rounded-lg border border-[#E5E7EB]">
-            <Info size={14} className="text-[#2563EB]" />
-            <span className="text-[11px] font-medium text-[#6B7280]">Changes apply to all new documents</span>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              background: "#1D4ED8",
-              color: "#fff",
-              border: "none",
-              borderRadius: 7,
-              height: 32,
-              padding: "0 14px",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              transition: "opacity 0.2s"
-            }}
-            className="hover:opacity-90 disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : <><Save size={14} /> Save Changes</>}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar: Blocks & Components */}
-        <div className="w-72 bg-white border-r border-[#E5E7EB] flex flex-col shrink-0">
-          <div className="px-4 py-3 border-b border-[#F3F4F6] flex items-center gap-2">
-             <Layout size={14} className="text-[#9CA3AF]" />
-             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]">Components</span>
-          </div>
-          <div id="blocks" className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-             {/* GrapesJS Blocks will be appended here */}
-          </div>
-        </div>
-
-        {/* Main Canvas */}
-        <div className="flex-1 bg-[#F1F5F9] relative p-8 overflow-auto flex flex-col items-center">
+    <div className="flex flex-col min-h-screen font-sans bg-[#F9FAFB]">
+      <div className="flex-1 flex flex-col items-center p-8">
+        {/* ── Main Canvas Container ─────────────────────────────────────────── */}
           <div 
             ref={editorRef} 
-            className="w-full max-w-[850px] bg-white rounded-xl shadow-sm border border-[#E5E7EB]" 
-            style={{ minHeight: "800px" }}
+            className="w-full max-w-[850px] bg-white rounded shadow-sm border border-[#E5E7EB]" 
+            style={{ minHeight: "1100px" }}
           />
-        </div>
-
-        {/* Right Sidebar: Styles */}
-        <div className="w-80 bg-white border-l border-[#E5E7EB] flex flex-col shrink-0">
-          <div className="px-4 py-3 border-b border-[#F3F4F6] flex items-center gap-2">
-             <Palette size={14} className="text-[#9CA3AF]" />
-             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]">Design System</span>
-          </div>
-          <div id="styles-container" className="flex-1 overflow-y-auto p-4 custom-scrollbar text-[#4B5563] text-sm bg-white">
-             {/* GrapesJS Style Manager will be appended here */}
-          </div>
-
-          <div className="p-6 bg-[#FFFBEB]/50 border-t border-[#FDE68A]/40">
-             <div className="flex items-center gap-2 text-[#D97706] mb-2">
-                <Info size={14} />
-                <span className="text-[11px] font-bold uppercase tracking-wide">Brand Tokens</span>
-             </div>
-             <p className="text-[11px] text-[#92400E] leading-relaxed opacity-80">
-                Drag <strong>tokens</strong> into your header or footer to keep info dynamic. 
-                They'll be replaced with your actual data when generating docs.
-             </p>
-          </div>
-        </div>
       </div>
 
       <style jsx global>{`
-        /* Fix GrapesJS general backgrounds for Light Mode */
-        .gjs-one-bg { background-color: #FFFFFF !important; }
-        .gjs-two-bg { background-color: #F9FAFB !important; }
-        .gjs-three-bg { background-color: #EFF6FF !important; }
-        .gjs-four-color { color: #1D4ED8 !important; }
-        .gjs-four-color-h:hover { color: #2563EB !important; }
+        .gjs-one-bg { background-color: transparent !important; }
+        .gjs-two-bg { background-color: transparent !important; }
+        .gjs-three-bg { background-color: #e8f0fe !important; }
+        .gjs-four-color { color: #1a73e8 !important; }
+        .gjs-four-color-h:hover { color: #1557b0 !important; }
 
         .gjs-cv-canvas {
           top: 0;
@@ -263,96 +338,30 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
           height: 100%;
           background-color: transparent !important;
         }
-        
-        /* Sidebars Overrides */
-        #blocks, #styles-container {
-           background-color: #FFFFFF !important;
-        }
 
-        .gjs-block {
-          width: auto !important;
-          min-height: auto !important;
-          padding: 10px 12px !important;
-          background-color: #FFFFFF !important;
-          border: 0.5px solid #E5E7EB !important;
-          color: #4B5563 !important;
-          border-radius: 8px !important;
-          margin: 0 0 8px 0 !important;
-          font-size: 12px !important;
-          font-weight: 500 !important;
-          transition: all 0.2s !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: 10px !important;
-          justify-content: flex-start !important;
-          box-shadow: none !important;
-        }
-        .gjs-block:hover {
-          background-color: #F9FAFB !important;
-          color: #1D4ED8 !important;
-          border-color: #BFDBFE !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
-        }
-        .gjs-sm-sector-title {
-          background-color: transparent !important;
-          border-bottom: 0.5px solid #F3F4F6 !important;
-          color: #111827 !important;
-          padding: 14px 0 !important;
-          font-weight: 600 !important;
-          text-transform: uppercase !important;
-          font-size: 10px !important;
-          letter-spacing: 0.05em !important;
-        }
-        .gjs-sm-properties {
-          background-color: transparent !important;
-        }
-        .gjs-sm-property {
-            border: none !important;
-            padding: 10px 0 !important;
-        }
-        .gjs-sm-label {
-            color: #6B7280 !important;
-            font-size: 11px !important;
-            font-weight: 500 !important;
-        }
-        .gjs-field {
-            background-color: #F9FAFB !important;
-            border: 0.5px solid #E5E7EB !important;
-            border-radius: 6px !important;
-            color: #111827 !important;
-            font-size: 11.5px !important;
-            padding: 4px 8px !important;
-        }
-        .gjs-field-checkbox {
-            width: 14px !important;
-            height: 14px !important;
-        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
+          width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: #f1f3f4;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #E5E7EB;
+          background: #dadce0;
           border-radius: 10px;
         }
-        /* Hide GrapesJS default UI elements that look dated */
-        .gjs-sm-sector-caret {
-          color: #9CA3AF !important;
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #c1c5c9;
         }
-        
-        /* Light style for tokens/blocks category titles */
-        .gjs-block-category, .gjs-sm-sector {
-          border-bottom: 0.5px solid #F3F4F6 !important;
+
+        /* Outline for active selections */
+        .gjs-dashed *[data-gjs-highlightable] {
+            outline: 1px dashed rgba(170,170,170,0.5);
+            outline-offset: -2px;
         }
-        .gjs-block-category .gjs-title, .gjs-sm-sector .gjs-title {
-          background-color: #F9FAFB !important;
-          color: #6B7280 !important;
-          font-size: 10px !important;
-          font-weight: 700 !important;
-          text-transform: uppercase !important;
-          padding: 8px 12px !important;
+
+        .gjs-selected {
+            outline: 2px solid #1a73e8 !important;
+            outline-offset: -2px;
         }
       `}</style>
     </div>

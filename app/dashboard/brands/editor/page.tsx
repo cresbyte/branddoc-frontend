@@ -34,7 +34,7 @@ export default function BrandEditorPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white">
+      <div className="flex flex-col items-center justify-center h-screen  text-white">
         <Loader2 className="animate-spin text-brand-primary mb-4" size={40} />
         <p className="text-slate-400 font-medium animate-pulse">Initializing Visual Identity Engine...</p>
       </div>
@@ -43,7 +43,7 @@ export default function BrandEditorPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-10 text-center">
+      <div className="flex flex-col items-center justify-center h-screen  text-white p-10 text-center">
         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-6 border border-red-500/20">
             <AlertCircle size={32} />
         </div>
