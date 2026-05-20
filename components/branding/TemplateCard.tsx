@@ -66,7 +66,7 @@ export function TemplateCard({ template, onSelect, selected, isSelecting, contex
     <div
       className={`group relative flex flex-col bg-white overflow-hidden border ${
         selected ? "border-brand-primary ring-2 ring-brand-primary" : "border-slate-200"
-      } shadow-sm hover:shadow-xl transition-all duration-300 w-full aspect-[4/5] cursor-pointer`}
+      } shadow-sm hover:shadow-xl transition-all duration-300 w-full aspect-[4/4] cursor-pointer`}
       onClick={() => !isSelecting && onSelect(template)}
     >
       {/* Selected Indicator */}
@@ -88,8 +88,8 @@ export function TemplateCard({ template, onSelect, selected, isSelecting, contex
       {/* Preview Container: scaled to fit gracefullly */}
       <div className="w-full h-full bg-slate-50 relative overflow-hidden">
         <div
-          className="w-[1050px] h-[1312px] origin-top-left absolute top-0 left-0 bg-white"
-          style={{ transform: "scale(0.333)", pointerEvents: "none" }}
+          className="w-[300%] h-[300%] origin-top-left absolute top-0 left-0 bg-white"
+          style={{ transform: "scale(0.33333)", pointerEvents: "none" }}
         >
           <iframe
             srcDoc={previewHtml}
@@ -97,7 +97,7 @@ export function TemplateCard({ template, onSelect, selected, isSelecting, contex
             sandbox="allow-same-origin allow-scripts"
           />
         </div>
-        
+
         {/* Subtle overlay on hover */}
         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>

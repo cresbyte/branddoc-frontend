@@ -268,7 +268,7 @@ export default function BrandsPage() {
         </div>
 
         <div
-          className={`grid grid-cols-1 gap-8 transition-opacity duration-300 md:grid-cols-2 lg:grid-cols-3 ${brands.length === 0 ? "pointer-events-none opacity-50 grayscale" : ""}`}
+          className={`grid grid-cols-1 gap-8 transition-opacity duration-300 md:grid-cols-2 lg:grid-cols-4 ${brands.length === 0 ? "pointer-events-none opacity-50 grayscale" : ""}`}
         >
           {brandTemplates.map((t) => (
             <TemplateCard
