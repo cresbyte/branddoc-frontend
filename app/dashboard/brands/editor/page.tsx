@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBrandKit } from "@/lib/api";
+import { getBrandKit, getBrandProfiles } from "@/lib/api";
 import { BrandKitEditor } from "@/components/branding/BrandKitEditor";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function BrandEditorPage() {
   const [kit, setKit] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -16,8 +17,17 @@ export default function BrandEditorPage() {
     const fetchKit = async () => {
       try {
         setLoading(true);
-        const data = await getBrandKit();
-        setKit(data);
+        const [kitData, profilesData] = await Promise.all([
+          getBrandKit(),
+          getBrandProfiles()
+        ]);
+        setKit(kitData);
+        console.log(kitData);
+
+        // Handle paginated response which contains a 'results' array
+        const profiles = profilesData?.results ? profilesData.results : profilesData;
+        console.log(profiles[0]);
+        setProfile(profiles[0]);
       } catch (err: any) {
         if (err.message?.includes("404") || err.status === 404) {
             setError("No brand kit selected. Please choose a template from the gallery first.");
@@ -61,7 +71,7 @@ export default function BrandEditorPage() {
 
   return (
     <div className="h-screen w-full">
-      <BrandKitEditor initialKit={kit} />
+      <BrandKitEditor initialKit={kit} profile={profile} />
     </div>
   );
 }

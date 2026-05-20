@@ -80,6 +80,7 @@ export const api = {
 };
 
 // --- Brand Templating API ---
+export const getBrandProfiles = () => api.get("/api/base/brand-profiles/");
 export const getBrandTemplates = () => api.get("/api/base/brand-templates/");
 export const getBrandKit = () => api.get("/api/base/brand-kit/");
 export const selectTemplate = (templateId: string) => api.post("/api/base/brand-kit/select/", { template_id: templateId });

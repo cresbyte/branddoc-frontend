@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getStoredUser } from "@/lib/auth";
 import {
   Palette,
   Receipt,
@@ -165,8 +166,30 @@ function TemplateCardUI({ card }: { card: TemplateCard }) {
   );
 }
 
+/* ─── Helpers ───────────────────────────────────────────────── */
+function getGreeting(hour: number): string {
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  if (hour >= 17 && hour < 21) return "Good evening";
+  return "Good night";
+}
+
 /* ─── Main Dashboard Page ───────────────────────────────────── */
 export default function DashboardPage() {
+  const [greeting, setGreeting] = useState("Good morning");
+  const [firstName, setFirstName] = useState("");
+
+  useEffect(() => {
+    // Greeting based on local time
+    setGreeting(getGreeting(new Date().getHours()));
+
+    // First name from stored user (split full name on first space)
+    const user = getStoredUser();
+    if (user?.name) {
+      setFirstName(user.name.split(" ")[0]);
+    }
+  }, []);
+
   return (
     <>
       {/* Page heading */}
@@ -180,7 +203,7 @@ export default function DashboardPage() {
             marginBottom: 3,
           }}
         >
-          Good morning, Devrizal 👋
+          {greeting}{firstName ? `, ${firstName}` : ""} 👋
         </h1>
         <p style={{ fontSize: 13.5, color: "#6B7280" }}>
           Here's what's happening with your documents today.

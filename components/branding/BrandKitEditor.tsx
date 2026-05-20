@@ -11,8 +11,11 @@ import { useRouter } from "next/navigation";
 import { saveBrandKit } from "@/lib/api";
 import { useDashboard } from "@/app/dashboard/components/DashboardContext";
 
+import { interpolate } from "@/lib/utils";
+
 interface BrandKitEditorProps {
   initialKit: any;
+  profile?: any;
 }
 
 /* ── Primitives for Toolbar ────────────────────────────────────────────── */
@@ -88,19 +91,22 @@ function ActionDropdown({ title, options, onAction }: { title: string, options: 
   );
 }
 
-const INSERT_OPTIONS = [
-  // Layouts
-  { label: "Text Block", value: '<div data-gjs-type="text" style="padding: 10px; font-family: Inter, sans-serif; min-width: 100px; min-height: 20px;">Text Block</div>' },
-  { label: "Image", value: '<img data-gjs-type="image" src="https://via.placeholder.com/150" style="max-width: 100%;" />' },
-  { label: "Empty Section", value: '<div style="padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 50px; background: #f8fafc; border: 1px dashed #cbd5e1; width: 100%;">Section</div>' },
-  { label: "Divider", value: '<hr style="border-top: 1px solid #cbd5e1; width: 100%; margin: 10px 0;" />' },
-  // Tokens
-  { label: "Token: Company Name", value: '<span style="font-family: inherit; font-weight: bold; color: inherit;">{{company_name}}</span>' },
-  { label: "Token: Brand Logo", value: '<img src="{{logo_url}}" style="max-height: 50px;" alt="Brand Logo" />' },
-  { label: "Token: Email", value: '<span style="font-family: inherit; color: inherit;">{{email}}</span>' },
-];
+export function BrandKitEditor({ initialKit, profile }: BrandKitEditorProps) {
 
-export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
+  const ctx = profile ? { ...profile, logo_url: profile.logo_url || profile.logo } : {} as any;
+
+  const INSERT_OPTIONS = [
+    // Layouts
+    { label: "Text Block", value: '<div data-gjs-type="text" style="padding: 10px; font-family: Inter, sans-serif; min-width: 100px; min-height: 20px;">Text Block</div>' },
+    { label: "Image", value: '<img data-gjs-type="image" src="https://via.placeholder.com/150" style="max-width: 100%;" />' },
+    { label: "Empty Section", value: '<div style="padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 50px; background: #f8fafc; border: 1px dashed #cbd5e1; width: 100%;">Section</div>' },
+    { label: "Divider", value: '<hr style="border-top: 1px solid #cbd5e1; width: 100%; margin: 10px 0;" />' },
+    // Tokens
+    { label: "Token: Company Name", value: `<span style="font-family: inherit; font-weight: bold; color: inherit;">${ctx.company_name || '{{company_name}}'}</span>` },
+    { label: "Token: Brand Logo", value: `<img src="${ctx.logo_url || '{{logo_url}}'}" style="max-height: 50px;" alt="Brand Logo" />` },
+    { label: "Token: Email", value: `<span style="font-family: inherit; color: inherit;">${ctx.email || '{{email}}'}</span>` },
+  ];
+
   const editorRef = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -114,7 +120,11 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
   const { setHeaderTitle, setSearch, setCta, setExtra } = useDashboard();
 
   useEffect(() => {
-    if (!editorRef.current) return;
+    // Wait until both the kit and the brand profile are available
+    if (!editorRef.current || !initialKit || !profile) return;
+
+    // Build context inside the effect so it always has the freshest profile
+    const ctx = { ...profile, logo_url: profile.logo_url || profile.logo };
 
     const gjsEditor = grapesjs.init({
       container: editorRef.current,
@@ -123,17 +133,17 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
       width: "100%",
       storageManager: false,
       dragMode: "absolute",
-      panels: { defaults: [] }, 
+      panels: { defaults: [] },
       canvas: {
-         styles: [
-             "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
-         ]
-      }
+        styles: [
+          "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+        ],
+      },
     });
 
-    const headerHtml = initialKit?.header_html || initialKit?.template?.header_html || "";
-    const footerHtml = initialKit?.footer_html || initialKit?.template?.footer_html || "";
-    const cssContent = initialKit?.template_css || initialKit?.template?.template_css || "";
+    const headerHtml = interpolate(initialKit?.header_html || initialKit?.template?.header_html || "", ctx);
+    const footerHtml = interpolate(initialKit?.footer_html || initialKit?.template?.footer_html || "", ctx);
+    const cssContent = interpolate(initialKit?.template_css || initialKit?.template?.template_css || "", ctx);
 
     const combinedContent = `
       <style>
@@ -146,10 +156,10 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
       <div id="brand-header-container" data-gjs-name="Header Section">
         ${headerHtml}
       </div>
-      <div id="brand-content-placeholder" 
-           data-gjs-draggable="false" 
-           data-gjs-removable="false" 
-           data-gjs-copyable="false" 
+      <div id="brand-content-placeholder"
+           data-gjs-draggable="false"
+           data-gjs-removable="false"
+           data-gjs-copyable="false"
            data-gjs-selectable="false"
            style="margin: 40px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">
         [ Auto-Flowing Document Content ]
@@ -166,16 +176,16 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
       setActiveComponent(model);
       setActiveStyles(model.getStyle());
     });
-    
+
     gjsEditor.on('component:deselected', () => {
       setActiveComponent(null);
       setActiveStyles({});
     });
-    
+
     gjsEditor.on('component:update:style', (model: any) => {
-       if (gjsEditor.getSelected() === model) {
-           setActiveStyles(model.getStyle());
-       }
+      if (gjsEditor.getSelected() === model) {
+        setActiveStyles(model.getStyle());
+      }
     });
 
     setEditor(gjsEditor);
@@ -183,7 +193,7 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
     return () => {
       gjsEditor.destroy();
     };
-  }, [initialKit]);
+  }, [initialKit, profile]);
 
   // Actions
   const handleUndo = useCallback(() => editor?.runCommand("core:undo"), [editor]);
@@ -337,20 +347,6 @@ export function BrandKitEditor({ initialKit }: BrandKitEditorProps) {
           width: 100%;
           height: 100%;
           background-color: transparent !important;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f3f4;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #dadce0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #c1c5c9;
         }
 
         /* Outline for active selections */
