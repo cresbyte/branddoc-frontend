@@ -129,9 +129,6 @@ export default function CreateInvoicePage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Your business</p>
-                <Link href="/dashboard/brands">
-                  <span className="text-xs text-[#4f46e5] hover:underline cursor-pointer">Edit</span>
-                </Link>
               </div>
               <div className="space-y-3">
                 <div className="space-y-1">

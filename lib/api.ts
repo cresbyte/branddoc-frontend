@@ -21,6 +21,7 @@ async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<a
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    cache: "no-store",
   });
 
   if (res.status === 401) {
@@ -78,16 +79,3 @@ export const api = {
     fetchWithAuth(path, { method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body) }),
   delete: (path: string) => fetchWithAuth(path, { method: "DELETE" }),
 };
-
-// --- Brand Templating API ---
-export const getBrandProfiles = () => api.get("/api/base/brand-profiles/");
-export const getBrandTemplates = () => api.get("/api/base/brand-templates/");
-export const getBrandKit = () => api.get("/api/base/brand-kit/");
-export const selectTemplate = (templateId: string) => api.post("/api/base/brand-kit/select/", { template_id: templateId });
-export const saveBrandKit = (data: {
-  header_html?: string
-  footer_html?: string
-  template_css?: string
-  elements?: string       // JSON-serialised CE[]
-  brand_colors?: string   // JSON-serialised { primary, secondary }
-}) => api.patch("/api/base/brand-kit/save/", data);

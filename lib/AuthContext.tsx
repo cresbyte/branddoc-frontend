@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AuthUser, getStoredUser, clearTokens, getAccessToken } from "./auth";
+import { AuthUser, getStoredUser, clearTokens, getAccessToken, getUserProfile } from "./auth";
 import Cookies from "js-cookie";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -27,6 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (storedUser && token) {
       setUser(storedUser);
+      // Refresh user data from server to catch role changes
+      getUserProfile()
+        .then((freshUser) => setUser(freshUser))
+        .catch(() => {
+          // If profile fetch fails, token might be invalid
+          clearTokens();
+          setUser(null);
+        });
+      
       // Sync cookie if missing
       if (!Cookies.get("authenticated")) {
         Cookies.set("authenticated", "true", { expires: 7 });

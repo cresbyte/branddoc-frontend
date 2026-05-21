@@ -3,13 +3,19 @@ import {
   LayoutDashboard,
   Files,
   LayoutTemplate,
-  Palette,
   Receipt,
   FileCheck,
   BarChart3,
   Mail,
   Building2,
   User,
+  GalleryVertical,
+  Palette,
+  ShieldCheck,
+  Users,
+  BarChart,
+  CreditCard,
+  Settings,
 } from "lucide-react";
 
 export interface NavItem {
@@ -23,12 +29,11 @@ export interface NavItem {
 export const NAV_WORKSPACE: NavItem[] = [
   { icon: <LayoutDashboard size={15} />, label: "Dashboard", id: "dashboard", href: "/dashboard" },
   { icon: <Files size={15} />, label: "My Documents", count: 24, id: "docs", href: "/dashboard/documents" },
-  { icon: <LayoutTemplate size={15} />, label: "Templates", count: 80, id: "templates", href: "/dashboard/templates" },
+  { icon: <GalleryVertical size={15} />, label: "Browse Templates", id: "templates-gallery", href: "/dashboard/templates" },
+  { icon: <Palette size={15} />, label: "My Designs", id: "designs", href: "/dashboard/designs" },
 ];
 
-export const NAV_BRANDS: NavItem[] = [
-  { icon: <Palette size={15} />, label: "Brands", id: "brands", href: "/dashboard/brands" },
-];
+
 
 export const NAV_DOCS: NavItem[] = [
   { icon: <Receipt size={15} />, label: "Invoices", count: 6, id: "invoices", href: "/dashboard/invoices" },
@@ -40,4 +45,12 @@ export const NAV_DOCS: NavItem[] = [
 export const NAV_COLLECTIONS: NavItem[] = [
   { icon: <Building2 size={15} />, label: "Acme Corp", id: "acme", href: "/dashboard/collections/acme" },
   { icon: <User size={15} />, label: "Personal", id: "personal", href: "/dashboard/collections/personal" },
+];
+
+export const NAV_ADMIN: NavItem[] = [
+  { icon: <ShieldCheck size={15} />, label: "Manage Templates", id: "admin-templates", href: "/dashboard/admin/templates" },
+  { icon: <Users size={15} />, label: "Users", id: "admin-users", href: "/dashboard/admin/users" },
+  { icon: <BarChart size={15} />, label: "Analytics", id: "admin-analytics", href: "/dashboard/admin/analytics" },
+  { icon: <CreditCard size={15} />, label: "Payments", id: "admin-payments", href: "/dashboard/admin/payments" },
+  { icon: <Settings size={15} />, label: "Settings", id: "admin-settings", href: "/dashboard/admin/settings" },
 ];

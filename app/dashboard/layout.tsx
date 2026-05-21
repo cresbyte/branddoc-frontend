@@ -15,11 +15,15 @@ import {
   NAV_WORKSPACE,
   NAV_DOCS,
   NAV_COLLECTIONS,
-  NAV_BRANDS,
+  NAV_ADMIN,
   NavItem,
 } from "./components/NavData";
 import { DashboardProvider, useDashboard } from "./components/DashboardContext";
 import { useAuth } from "@/lib/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+
+const queryClient = new QueryClient();
 
 /* ─── Sub-components ────────────────────────────────────────── */
 function SidebarSection({ label }: { label: string }) {
@@ -175,7 +179,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <div style={{ flex: 1 }}>
           <SidebarSection label="Workspace" />
-          {NAV_WORKSPACE.map((item) => (
+          {NAV_WORKSPACE.filter(item => item.id !== "admin-templates" || user?.is_staff).map((item) => (
             <NavLink
               key={item.id}
               item={item}
@@ -192,7 +196,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             />
           ))}
 
-          <SidebarSection label="Collections" />
           {NAV_COLLECTIONS.map((item) => (
             <NavLink
               key={item.id}
@@ -200,6 +203,27 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               active={pathname === item.href}
             />
           ))}
+
+          {NAV_COLLECTIONS.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={pathname === item.href}
+            />
+          ))}
+
+          {user?.is_staff && (
+            <>
+              <SidebarSection label="Admin Center" />
+              {NAV_ADMIN.map((item) => (
+                <NavLink
+                  key={item.id}
+                  item={item}
+                  active={pathname === item.href}
+                />
+              ))}
+            </>
+          )}
           <button
             style={{
               display: "flex",
@@ -221,14 +245,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <span>New collection</span>
           </button>
 
-          <SidebarSection label="Brands" />
-          {NAV_BRANDS.map((item) => (
-            <NavLink
-              key={item.id}
-              item={item}
-              active={pathname === item.href}
-            />
-          ))}
+
         </div>
 
         {/* User */}
@@ -487,8 +504,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </DashboardProvider>
+    <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+      <DashboardProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </DashboardProvider>
+    </QueryClientProvider>
   );
 }

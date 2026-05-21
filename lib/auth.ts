@@ -44,6 +44,7 @@ export interface AuthUser {
   email: string;
   name: string;
   profile_picture: string;
+  is_staff: boolean;
   auth_provider: "email" | "google";
   created_at: string;
 }
@@ -74,6 +75,25 @@ async function post<T>(path: string, body: unknown): Promise<T> {
         .join(" ") ??
       "Something went wrong";
     throw new Error(message);
+  }
+
+  return data as T;
+}
+
+async function get<T>(path: string): Promise<T> {
+  const access = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access}`,
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail ?? "Something went wrong");
   }
 
   return data as T;
@@ -173,4 +193,9 @@ export async function refreshAccessToken(): Promise<string> {
     clearTokens();
     throw error;
   }
+}
+export async function getUserProfile(): Promise<AuthUser> {
+  const data = await get<AuthUser>("/api/auth/me/");
+  saveUser(data);
+  return data;
 }
