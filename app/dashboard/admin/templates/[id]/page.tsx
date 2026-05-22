@@ -24,7 +24,16 @@ import {
 } from "@/services/templates";
 import StatusBadge from "@/components/ui/StatusBadge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import dynamic from "next/dynamic";
 import { useDashboard } from "../../../components/DashboardContext";
+
+const TemplateCanvas = dynamic(
+  () => import("@/components/admin/TemplateCanvas"),
+  { 
+    ssr: false, 
+    loading: () => <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" /></div> 
+  }
+);
 
 type Tab = "details" | "elements" | "assets";
 
@@ -211,87 +220,15 @@ export default function AdminTemplateEditorPage() {
           </div>
         )}
 
-        {tab === "elements" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowAddElement(true)}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
-              >
-                <Plus size={15} /> Add Element
-              </button>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Layout Preview
-              </div>
-              <div className="relative overflow-hidden bg-white" style={{ height: 350 }}>
-                {elements.map((el: any) => (
-                  <div
-                    key={el.id}
-                    title={el.placeholder_hint || el.element_type}
-                    style={{
-                      position: "absolute",
-                      left: `${el.x}%`,
-                      top: `${el.y}%`,
-                      width: `${el.width}%`,
-                      height: `${el.height}%`,
-                      backgroundColor: el.element_type === "text" ? "rgba(59,130,246,0.1)" : "rgba(100,100,100,0.1)",
-                      border: "1.5px solid rgba(59,130,246,0.4)",
-                      borderRadius: 4,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#6b7280",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <span className="text-[10px] font-medium p-1 text-center truncate">{el.placeholder_hint || el.element_type}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      <th className="px-6 py-4">Type</th>
-                      <th className="px-6 py-4">Name / Hint</th>
-                      <th className="px-6 py-4">Position (%)</th>
-                      <th className="px-6 py-4 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {loadingElems ? (
-                      <tr><td colSpan={4} className="py-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</td></tr>
-                    ) : elements.map((el: any) => (
-                      <tr key={el.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 capitalize font-semibold text-gray-900">{el.element_type}</td>
-                        <td className="px-6 py-4 text-gray-600">{el.placeholder_hint || "—"}</td>
-                        <td className="px-6 py-4 text-xs font-mono text-gray-400">
-                          X:{el.x} Y:{el.y} | {el.width}×{el.height}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center">
-                            <button
-                              onClick={() => setDeleteElemId(el.id)}
-                              className="rounded-lg p-2 text-red-500 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+        {tab === "elements" && tpl && (
+  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <TemplateCanvas
+      templateId={id}
+      canvasWidth={tpl.canvas_width ?? 794}
+      canvasHeight={tpl.canvas_height ?? 1123}
+    />
+  </div>
+)}
 
         {tab === "assets" && (
           <div className="rounded-2xl border border-gray-200 bg-white p-12 shadow-sm text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
