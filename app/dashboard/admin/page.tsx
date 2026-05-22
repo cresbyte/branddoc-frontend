@@ -48,17 +48,18 @@ const recentUsers = [
   { name: "Emily Brown", org: "Agency Alpha", role: "Contributor", joined: "3 hours ago" },
 ]
 
+import React, { useEffect } from "react";
+import { useDashboard } from "../components/DashboardContext";
+
 export default function AdminDashboardPage() {
+  const { setHeaderTitle } = useDashboard();
+  
+  useEffect(() => {
+    setHeaderTitle("Admin Overview");
+  }, [setHeaderTitle]);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Admin Overview</h1>
-        <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
-          <ShieldAlert className="h-4 w-4" />
-          2 System Alerts
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {systemStats.map((stat) => (
           <Card key={stat.label}>

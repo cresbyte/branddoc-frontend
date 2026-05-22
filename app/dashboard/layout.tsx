@@ -178,7 +178,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <div style={{ flex: 1 }}>
+
+          {user?.is_staff && (
+            <>
+              <SidebarSection label="Admin Center" />
+              {NAV_ADMIN.map((item) => (
+                <NavLink
+                  key={item.id}
+                  item={item}
+                  active={pathname === item.href}
+                />
+              ))}
+            </>
+          )}
           <SidebarSection label="Workspace" />
+
           {NAV_WORKSPACE.filter(item => item.id !== "admin-templates" || user?.is_staff).map((item) => (
             <NavLink
               key={item.id}
@@ -212,18 +226,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             />
           ))}
 
-          {user?.is_staff && (
-            <>
-              <SidebarSection label="Admin Center" />
-              {NAV_ADMIN.map((item) => (
-                <NavLink
-                  key={item.id}
-                  item={item}
-                  active={pathname === item.href}
-                />
-              ))}
-            </>
-          )}
           <button
             style={{
               display: "flex",
@@ -331,8 +333,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </button>
                 </Link>
                 <div style={{ height: "0.5px", background: "#F3F4F6", margin: "4px 0" }} />
-                <button 
-                  onClick={(e) => { e.stopPropagation(); logout(); }} 
+                <button
+                  onClick={(e) => { e.stopPropagation(); logout(); }}
                   style={{ ...dropdownItemStyle, color: "#EF4444" }}
                   onMouseEnter={hHoverRed} onMouseLeave={lHover}
                 >
@@ -435,7 +437,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               >
                 <Bell size={14} />
               </button>
-              
+
               {cta && (
                 <button
                   onClick={cta.onClick}

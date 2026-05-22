@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { FileText, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { FileText, ArrowRight, Layers } from "lucide-react";
 
 interface Template {
   id: string;
@@ -16,66 +16,103 @@ interface TemplateCardProps {
   onSelect: (id: string) => void;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  letterhead: "bg-blue-100 text-blue-700",
-  invoice: "bg-green-100 text-green-700",
-  certificate: "bg-purple-100 text-purple-700",
-  proposal: "bg-orange-100 text-orange-700",
-  other: "bg-gray-100 text-gray-600",
+const CATEGORY_STYLES: Record<string, { bg: string, text: string }> = {
+  letterhead:  { bg: "#EFF6FF", text: "#1D4ED8" },
+  invoice:     { bg: "#ECFDF5", text: "#059669" },
+  certificate: { bg: "#F5F3FF", text: "#6D28D9" },
+  proposal:    { bg: "#FFF7ED", text: "#C2410C" },
+  other:       { bg: "#F9FAFB", text: "#6B7280" },
 };
 
 export default function TemplateCard({ template, onSelect }: TemplateCardProps) {
-  const badgeColor = CATEGORY_COLORS[template.category] ?? CATEGORY_COLORS.other;
+  const [hovered, setHovered] = useState(false);
+  const theme = CATEGORY_STYLES[template.category] ?? CATEGORY_STYLES.other;
 
   return (
     <div
-      id={`template-card-${template.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: "#FFFFFF",
+        border: `0.5px solid ${hovered ? "#BFDBFE" : "#E5E7EB"}`,
+        borderRadius: 12,
+        overflow: "hidden",
+        cursor: "pointer",
+        transition: "border-color 0.15s, transform 0.2s, box-shadow 0.2s",
+        boxShadow: hovered ? "0 4px 12px rgba(0,0,0,0.05)" : "none",
+        transform: hovered ? "translateY(-2px)" : "none",
+      }}
+      onClick={() => onSelect(template.id)}
     >
-      {/* Thumbnail */}
-      <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
+      {/* Thumbnail Area */}
+      <div style={{
+        position: "relative", height: 160, background: "#F9FAFB",
+        borderBottom: "0.5px solid #F3F4F6",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden"
+      }}>
         {template.thumbnail_url ? (
           <img
             src={template.thumbnail_url}
             alt={template.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{
+              width: "100%", height: "100%", objectFit: "cover",
+              transition: "transform 0.4s",
+              transform: hovered ? "scale(1.05)" : "scale(1)"
+            }}
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-gray-300">
-            <FileText size={40} />
-            <span className="text-xs font-medium uppercase tracking-widest">Preview</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#D1D5DB" }}>
+            <FileText size={32} />
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>No Preview</span>
           </div>
         )}
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        {/* Category Badge - Over Thumbnail */}
+        <div style={{
+          position: "absolute", top: 12, right: 12,
+          padding: "3px 8px", borderRadius: 6,
+          background: theme.bg, color: theme.text,
+          fontSize: 10, fontWeight: 600, textTransform: "capitalize",
+          border: `0.5px solid ${theme.text}20`
+        }}>
+          {template.category}
+        </div>
       </div>
 
-      {/* Body */}
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 text-sm font-semibold text-gray-900 leading-snug">
+      {/* Content Area */}
+      <div style={{ padding: "14px", display: "flex", flexDirection: "column", flex: 1, gap: 10 }}>
+        <div>
+          <h3 style={{
+            fontSize: 14, fontWeight: 600, color: "#111827",
+            lineHeight: "1.4", margin: 0,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          }}>
             {template.title}
           </h3>
-          <span
-            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${badgeColor}`}
-          >
-            {template.category}
-          </span>
+          {template.element_count !== undefined && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11.5, color: "#9CA3AF" }}>
+              <Layers size={11} />
+              {template.element_count} elements
+            </div>
+          )}
         </div>
 
-        {template.element_count !== undefined && (
-          <p className="text-xs text-gray-400">{template.element_count} elements</p>
-        )}
-
-        <button
-          id={`use-template-${template.id}`}
-          onClick={() => onSelect(template.id)}
-          className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-300 active:scale-95"
-        >
-          Use This Template
-          <ArrowRight size={15} />
-        </button>
+        <div style={{
+          marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 6, padding: "8px 12px", borderRadius: 8,
+          background: hovered ? "#1D4ED8" : "#F9FAFB",
+          color: hovered ? "#FFFFFF" : "#4B5563",
+          fontSize: 13, fontWeight: 500,
+          border: hovered ? "0.5px solid #1D4ED8" : "0.5px solid #E5E7EB",
+          transition: "all 0.15s"
+        }}>
+          Use Template
+          <ArrowRight size={14} />
+        </div>
       </div>
     </div>
   );

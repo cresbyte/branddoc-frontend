@@ -70,12 +70,12 @@ async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<a
 }
 
 export const api = {
-  get: (path: string) => fetchWithAuth(path, { method: "GET" }),
-  post: (path: string, body: unknown) => 
-    fetchWithAuth(path, { method: "POST", body: body instanceof FormData ? body : JSON.stringify(body) }),
-  put: (path: string, body: unknown) => 
-    fetchWithAuth(path, { method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body) }),
-  patch: (path: string, body: unknown) => 
-    fetchWithAuth(path, { method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body) }),
+  get: <T = any>(path: string) => fetchWithAuth(path, { method: "GET" }) as Promise<T>,
+  post: <T = any>(path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "POST", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
+  put: <T = any>(path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
+  patch: <T = any>(path: string, body: unknown) => 
+    fetchWithAuth(path, { method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
   delete: (path: string) => fetchWithAuth(path, { method: "DELETE" }),
 };

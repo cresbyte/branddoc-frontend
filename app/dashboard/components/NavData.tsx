@@ -31,6 +31,7 @@ export const NAV_WORKSPACE: NavItem[] = [
   { icon: <Files size={15} />, label: "My Documents", count: 24, id: "docs", href: "/dashboard/documents" },
   { icon: <GalleryVertical size={15} />, label: "Browse Templates", id: "templates-gallery", href: "/dashboard/templates" },
   { icon: <Palette size={15} />, label: "My Designs", id: "designs", href: "/dashboard/designs" },
+  { icon: <Building2 size={15} />, label: "Brand Kit", id: "brand-kit", href: "/dashboard/brand" },
 ];
 
 

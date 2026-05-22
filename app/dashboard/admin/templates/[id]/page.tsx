@@ -5,20 +5,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
-  ArrowLeft, Save, Loader2, Plus, Trash2, Pencil, X, Check,
+  ArrowLeft, Save, Loader2, Plus, Trash2, X, Check,
+} from "lucide-react";
+import { TextField } from "@/components/DesignSystem/TextField";
+import { SelectField } from "@/components/DesignSystem/SelectField";
+import { TextAreaField } from "@/components/DesignSystem/TextAreaField";
+import { Button } from "@/components/DesignSystem/Button";
+import { ImageUpload } from "@/components/DesignSystem/ImageUpload";
+import { 
+  Type, Layers, Globe, Building2, Sparkles, Maximize
 } from "lucide-react";
 import {
   adminGetTemplate,
   adminUpdateTemplate,
   adminGetElements,
   adminAddElement,
-  adminUpdateElement,
   adminDeleteElement,
-  adminUploadAsset,
-  adminDeleteTemplate,
 } from "@/services/templates";
 import StatusBadge from "@/components/ui/StatusBadge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useDashboard } from "../../../components/DashboardContext";
 
 type Tab = "details" | "elements" | "assets";
 
@@ -38,18 +44,16 @@ export default function AdminTemplateEditorPage() {
     content: "", font_size: 14, color: "#000000", is_editable: true, is_locked: false,
   });
   const [detailsForm, setDetailsForm] = useState<Record<string, any>>({});
+  const { setHeaderTitle } = useDashboard();
 
-  // ── Queries ────────────────────────────────────────────────────────────────
-  const { data: tpl, isLoading: loadingTpl } = useQuery({
+  useEffect(() => {
+    setHeaderTitle("Edit Template");
+  }, [setHeaderTitle]);
+
+  const { data: tpl, isLoading: loadingTpl } = useQuery<any>({
     queryKey: ["admin-template", id],
     queryFn: () => adminGetTemplate(id),
-    onSuccess: (d: any) => setDetailsForm({
-      title: d.title, description: d.description, category: d.category,
-      status: d.status, thumbnail_url: d.thumbnail_url,
-      canvas_width: d.canvas_width, canvas_height: d.canvas_height,
-    }),
-    onError: () => toast.error("Failed to load template."),
-  } as any);
+  });
 
   useEffect(() => {
     if (tpl) {
@@ -58,19 +62,18 @@ export default function AdminTemplateEditorPage() {
         status: tpl.status, thumbnail_url: tpl.thumbnail_url,
         canvas_width: tpl.canvas_width, canvas_height: tpl.canvas_height,
       });
+      setHeaderTitle(`Edit: ${tpl.title}`);
     }
-  }, [tpl]);
+  }, [tpl, setHeaderTitle]);
 
-  const { data: elementsData, isLoading: loadingElems } = useQuery({
+  const { data: elementsData, isLoading: loadingElems } = useQuery<any>({
     queryKey: ["admin-elements", id],
     queryFn: () => adminGetElements(id),
     enabled: tab === "elements",
-    onError: () => toast.error("Failed to load elements."),
-  } as any);
+  });
 
   const elements = elementsData?.results ?? elementsData ?? [];
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
   const updateDetailsMutation = useMutation({
     mutationFn: () => adminUpdateTemplate(id, detailsForm),
     onSuccess: () => {
@@ -96,7 +99,6 @@ export default function AdminTemplateEditorPage() {
       toast.success("Element deleted.");
       qc.invalidateQueries({ queryKey: ["admin-elements", id] });
     },
-    onError: () => toast.error("Failed to delete element."),
   });
 
   const setD = (field: string, val: any) =>
@@ -106,140 +108,125 @@ export default function AdminTemplateEditorPage() {
     setNewElement((p) => ({ ...p, [field]: val }));
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="border-b bg-white px-8 py-5">
-        <div className="mx-auto flex max-w-6xl items-center gap-4">
+    <div className="py-2">
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => router.push("/dashboard/admin/templates")}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors bg-white shadow-sm"
+        >
+          <ArrowLeft size={13} /> Back to List
+        </button>
+      </div>
+
+      <div className="mb-6 flex gap-1 border-b border-gray-100">
+        {(["details", "elements", "assets"] as Tab[]).map((t) => (
           <button
-            onClick={() => router.push("/admin/templates")}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-6 py-3 text-sm font-medium capitalize transition-all border-b-2 ${
+              tab === t
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           >
-            <ArrowLeft size={15} /> Back
+            {t}
           </button>
-          <div className="flex-1 min-w-0">
-            {loadingTpl ? (
-              <div className="h-5 w-48 animate-pulse rounded bg-gray-200" />
-            ) : (
-              <div className="flex items-center gap-3">
-                <h1 className="truncate text-lg font-bold text-gray-900">{tpl?.title}</h1>
-                <StatusBadge status={tpl?.status ?? "draft"} />
-              </div>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Tabs */}
-      <div className="border-b bg-white px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex gap-1">
-            {(["details", "elements", "assets"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                id={`admin-tab-${t}`}
-                onClick={() => setTab(t)}
-                className={`px-5 py-3 text-sm font-medium capitalize transition-colors border-b-2 ${
-                  tab === t
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl px-8 py-8">
-        {/* ── Details Tab ──────────────────────────────────────────────────── */}
+      <div>
         {tab === "details" && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="rounded-[24px] border-[1.5px] border-slate-200 bg-white p-10 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Title</label>
-                <input
-                  id="admin-tpl-title"
+                <TextField 
+                  label="Template Title"
                   value={detailsForm.title ?? ""}
                   onChange={(e) => setD("title", e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                  placeholder="Enter template title..."
+                  icon={Type}
                 />
               </div>
+              
               <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Description</label>
-                <textarea
-                  id="admin-tpl-description"
+                <TextAreaField 
+                  label="Description"
                   value={detailsForm.description ?? ""}
                   onChange={(e) => setD("description", e.target.value)}
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                  placeholder="Describe this template..."
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Category</label>
-                <select
-                  id="admin-tpl-category"
-                  value={detailsForm.category ?? "letterhead"}
-                  onChange={(e) => setD("category", e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                  ))}
-                </select>
+
+              <SelectField 
+                label="Category"
+                value={detailsForm.category ?? "letterhead"}
+                onChange={(e) => setD("category", e.target.value)}
+                options={CATEGORIES.map(c => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))}
+              />
+
+              <SelectField 
+                label="Status"
+                value={detailsForm.status ?? "draft"}
+                onChange={(e) => setD("status", e.target.value)}
+                options={STATUSES.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+              />
+
+              <div className="sm:col-span-2">
+                <ImageUpload 
+                  label="Template Thumbnail"
+                  value={detailsForm.thumbnail_url ?? ""}
+                  onChange={(url) => setD("thumbnail_url", url)}
+                />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Status</label>
-                <select
-                  id="admin-tpl-status"
-                  value={detailsForm.status ?? "draft"}
-                  onChange={(e) => setD("status", e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
+
+              <TextField 
+                label="Canvas Width (px)"
+                type="number"
+                value={detailsForm.canvas_width ?? 794}
+                onChange={(e) => setD("canvas_width", parseInt(e.target.value))}
+                icon={Maximize}
+              />
+
+              <TextField 
+                label="Canvas Height (px)"
+                type="number"
+                value={detailsForm.canvas_height ?? 1123}
+                onChange={(e) => setD("canvas_height", parseInt(e.target.value))}
+                icon={Maximize}
+              />
             </div>
-            <div className="mt-8 flex justify-end">
-              <button
-                id="admin-save-details-btn"
+
+            <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+              <Button
                 onClick={() => updateDetailsMutation.mutate()}
-                disabled={updateDetailsMutation.isPending}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:bg-blue-700 disabled:opacity-60 transition-all"
+                loading={updateDetailsMutation.isPending}
+                icon={Save}
+                size="lg"
+                className="px-8"
               >
-                {updateDetailsMutation.isPending
-                  ? <Loader2 size={14} className="animate-spin" />
-                  : <Save size={14} />}
-                Save Details
-              </button>
+                Save Template
+              </Button>
             </div>
           </div>
         )}
 
-        {/* ── Elements Tab ─────────────────────────────────────────────────── */}
         {tab === "elements" && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex justify-end">
               <button
-                id="admin-add-element-btn"
                 onClick={() => setShowAddElement(true)}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:bg-blue-700 transition-all"
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
               >
                 <Plus size={15} /> Add Element
               </button>
             </div>
 
-            {/* Visual layout preview */}
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
                 Layout Preview
               </div>
-              <div
-                className="relative overflow-hidden bg-white"
-                style={{ height: 300 }}
-              >
+              <div className="relative overflow-hidden bg-white" style={{ height: 350 }}>
                 {elements.map((el: any) => (
                   <div
                     key={el.id}
@@ -247,18 +234,12 @@ export default function AdminTemplateEditorPage() {
                     style={{
                       position: "absolute",
                       left: `${el.x}%`,
-                      top: `${(el.y / 100) * 100}%`,
+                      top: `${el.y}%`,
                       width: `${el.width}%`,
-                      height: Math.max((el.height / 112.3) * 300, 2),
-                      backgroundColor:
-                        el.element_type === "text"
-                          ? "rgba(59,130,246,0.15)"
-                          : el.background_color !== "transparent"
-                          ? el.background_color
-                          : "rgba(100,100,100,0.15)",
-                      border: "1px solid rgba(59,130,246,0.3)",
-                      borderRadius: 2,
-                      fontSize: 9,
+                      height: `${el.height}%`,
+                      backgroundColor: el.element_type === "text" ? "rgba(59,130,246,0.1)" : "rgba(100,100,100,0.1)",
+                      border: "1.5px solid rgba(59,130,246,0.4)",
+                      borderRadius: 4,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -266,9 +247,7 @@ export default function AdminTemplateEditorPage() {
                       overflow: "hidden",
                     }}
                   >
-                    <span style={{ fontSize: 8, padding: "0 4px", textAlign: "center" }}>
-                      {el.element_type}
-                    </span>
+                    <span className="text-[10px] font-medium p-1 text-center truncate">{el.placeholder_hint || el.element_type}</span>
                   </div>
                 ))}
               </div>
@@ -279,57 +258,34 @@ export default function AdminTemplateEditorPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      <th className="px-5 py-3">Type</th>
-                      <th className="px-5 py-3">Name / Hint</th>
-                      <th className="px-5 py-3">Position</th>
-                      <th className="px-5 py-3">Editable</th>
-                      <th className="px-5 py-3">Locked</th>
-                      <th className="px-5 py-3">Actions</th>
+                      <th className="px-6 py-4">Type</th>
+                      <th className="px-6 py-4">Name / Hint</th>
+                      <th className="px-6 py-4">Position (%)</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {loadingElems
-                      ? Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i}>
-                            {Array.from({ length: 6 }).map((_, j) => (
-                              <td key={j} className="px-5 py-3">
-                                <div className="h-4 animate-pulse rounded bg-gray-100" />
-                              </td>
-                            ))}
-                          </tr>
-                        ))
-                      : elements.map((el: any) => (
-                          <tr key={el.id} className="hover:bg-gray-50 transition">
-                            <td className="px-5 py-3 capitalize font-medium text-gray-800">
-                              {el.element_type}
-                            </td>
-                            <td className="px-5 py-3 text-gray-500 max-w-[200px] truncate">
-                              {el.placeholder_hint || el.content?.slice(0, 30) || "—"}
-                            </td>
-                            <td className="px-5 py-3 text-xs text-gray-400 font-mono">
-                              {el.x}%,{el.y}% — {el.width}×{el.height}
-                            </td>
-                            <td className="px-5 py-3">
-                              <span className={`text-xs font-medium ${el.is_editable ? "text-emerald-600" : "text-gray-400"}`}>
-                                {el.is_editable ? "Yes" : "No"}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3">
-                              <span className={`text-xs font-medium ${el.is_locked ? "text-amber-600" : "text-gray-400"}`}>
-                                {el.is_locked ? "Yes" : "No"}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3">
-                              <button
-                                id={`delete-elem-${el.id}`}
-                                onClick={() => setDeleteElemId(el.id)}
-                                className="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-500 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 size={11} /> Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                    {loadingElems ? (
+                      <tr><td colSpan={4} className="py-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</td></tr>
+                    ) : elements.map((el: any) => (
+                      <tr key={el.id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 capitalize font-semibold text-gray-900">{el.element_type}</td>
+                        <td className="px-6 py-4 text-gray-600">{el.placeholder_hint || "—"}</td>
+                        <td className="px-6 py-4 text-xs font-mono text-gray-400">
+                          X:{el.x} Y:{el.y} | {el.width}×{el.height}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => setDeleteElemId(el.id)}
+                              className="rounded-lg p-2 text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -337,134 +293,71 @@ export default function AdminTemplateEditorPage() {
           </div>
         )}
 
-        {/* ── Assets Tab ───────────────────────────────────────────────────── */}
         {tab === "assets" && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-6 text-base font-semibold text-gray-800">Template Assets</h2>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Asset Name</label>
-                <input
-                  id="asset-name"
-                  placeholder="e.g. Company Logo"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Asset Type</label>
-                <select
-                  id="asset-type"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
-                >
-                  <option value="svg">SVG</option>
-                  <option value="image">Image</option>
-                  <option value="icon">Icon</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">File URL</label>
-                <input
-                  id="asset-url"
-                  placeholder="https://…"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
-                />
-              </div>
+          <div className="rounded-2xl border border-gray-200 bg-white p-12 shadow-sm text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <Plus size={24} className="text-gray-300" />
             </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                id="admin-upload-asset-btn"
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:bg-blue-700 transition-all"
-              >
-                <Plus size={14} /> Add Asset
-              </button>
-            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Asset Management Coming Soon</h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">Upload images, icons and background SVGs to use in your templates.</p>
           </div>
         )}
       </div>
 
-      {/* Add element modal */}
       {showAddElement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-900">Add Element</h2>
-              <button onClick={() => setShowAddElement(false)} className="rounded-lg p-1 hover:bg-gray-100">
-                <X size={16} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Add New Element</h2>
+              <button onClick={() => setShowAddElement(false)} className="rounded-full p-2 hover:bg-gray-100 transition-colors">
+                <X size={18} />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">Type</label>
-                <select value={newElement.element_type} onChange={(e) => setNE("element_type", e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
-                >
-                  {ELEMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+            <div className="grid grid-cols-2 gap-5">
+              <div className="col-span-2">
+                <SelectField 
+                  label="Element Type"
+                  value={newElement.element_type}
+                  onChange={(e) => setNE("element_type", e.target.value)}
+                  options={ELEMENT_TYPES.map(t => ({ value: t, label: t.toUpperCase() }))}
+                />
               </div>
+              
+              <div className="col-span-2">
+                <TextField 
+                  label="Placeholder Hint"
+                  placeholder="e.g. Company Name"
+                  value={newElement.placeholder_hint || ""} 
+                  onChange={(e) => setNE("placeholder_hint", e.target.value)}
+                />
+              </div>
+
               {["x", "y", "width", "height"].map((f) => (
                 <div key={f}>
-                  <label className="mb-1 block text-xs font-semibold text-gray-600">{f} (%)</label>
-                  <input type="number" value={newElement[f] ?? 0}
+                  <TextField 
+                    label={`${f.toUpperCase()} (%)`}
+                    type="number"
+                    value={newElement[f] ?? 0}
                     onChange={(e) => setNE(f, parseFloat(e.target.value))}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
                   />
                 </div>
               ))}
-              {newElement.element_type === "text" && (
-                <>
-                  <div className="col-span-2">
-                    <label className="mb-1 block text-xs font-semibold text-gray-600">Content</label>
-                    <input value={newElement.content || ""} onChange={(e) => setNE("content", e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-600">Font Size</label>
-                    <input type="number" value={newElement.font_size ?? 14}
-                      onChange={(e) => setNE("font_size", parseFloat(e.target.value))}
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-600">Color</label>
-                    <input type="color" value={newElement.color || "#000000"}
-                      onChange={(e) => setNE("color", e.target.value)}
-                      className="h-9 w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-0.5"
-                    />
-                  </div>
-                </>
-              )}
-              <div className="col-span-2 flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="checkbox" checked={!!newElement.is_editable}
-                    onChange={(e) => setNE("is_editable", e.target.checked)}
-                    className="rounded"
-                  /> Editable
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="checkbox" checked={!!newElement.is_locked}
-                    onChange={(e) => setNE("is_locked", e.target.checked)}
-                    className="rounded"
-                  /> Locked
-                </label>
-              </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-8 flex justify-end gap-3">
               <button onClick={() => setShowAddElement(false)}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-xl px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
-                id="confirm-add-element-btn"
                 onClick={() => addElementMutation.mutate()}
                 disabled={addElementMutation.isPending}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:bg-blue-700 transition-all"
               >
-                {addElementMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                Add
+                {addElementMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                Create Element
               </button>
             </div>
           </div>
@@ -474,7 +367,7 @@ export default function AdminTemplateEditorPage() {
       <ConfirmDialog
         isOpen={!!deleteElemId}
         title="Delete Element"
-        message="This will permanently remove the element from the template."
+        message="This will permanently remove the element from the template. This action cannot be undone."
         confirmLabel="Delete"
         danger
         onConfirm={() => {
