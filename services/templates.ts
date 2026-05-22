@@ -50,3 +50,35 @@ export const updateUserDesign = (id: string, data: unknown) =>
   api.put(`/api/designs/${id}/`, data);
 
 export const deleteUserDesign = (id: string) => api.delete(`/api/designs/${id}/`);
+
+// ── Icon endpoints ────────────────────────────────────
+
+// GET /api/icons/
+export const getIcons = (params: Record<string, string> = {}) => {
+  const qs = new URLSearchParams(params).toString();
+  return api.get(`/api/icons/${qs ? "?" + qs : ""}`);
+};
+
+// Admin only
+export const adminGetIcons = (params: Record<string, string> = {}) => {
+  const qs = new URLSearchParams(params).toString();
+  return api.get(`/api/icons/${qs ? "?" + qs : ""}`);
+};
+
+export const adminCreateIcon = (data: unknown) =>
+  api.post("/api/icons/", data);
+
+export const adminUpdateIcon = (id: string, data: unknown) =>
+  api.put(`/api/icons/${id}/`, data);
+
+export const adminDeleteIcon = (id: string) =>
+  api.delete(`/api/icons/${id}/`);
+
+export const adminCreateIconVariant = (data: unknown) =>
+  api.post("/api/icon-variants/", data);
+
+export const adminUpdateIconVariant = (id: string, data: unknown) =>
+  api.put(`/api/icon-variants/${id}/`, data);
+
+export const adminDeleteIconVariant = (id: string) =>
+  api.delete(`/api/icon-variants/${id}/`);

@@ -50,6 +50,7 @@ export const NAV_COLLECTIONS: NavItem[] = [
 
 export const NAV_ADMIN: NavItem[] = [
   { icon: <ShieldCheck size={15} />, label: "Manage Templates", id: "admin-templates", href: "/dashboard/admin/templates" },
+  { icon: <LayoutTemplate size={15} />, label: "Icons", id: "admin-icons", href: "/dashboard/admin/icons" },
   { icon: <Users size={15} />, label: "Users", id: "admin-users", href: "/dashboard/admin/users" },
   { icon: <BarChart size={15} />, label: "Analytics", id: "admin-analytics", href: "/dashboard/admin/analytics" },
   { icon: <CreditCard size={15} />, label: "Payments", id: "admin-payments", href: "/dashboard/admin/payments" },

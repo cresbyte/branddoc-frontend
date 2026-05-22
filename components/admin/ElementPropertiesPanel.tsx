@@ -5,10 +5,13 @@ import { useDropzone } from 'react-dropzone';
 import { 
   Trash2, Copy, Move, Maximize, RotateCw, 
   Type, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Bold, Italic, Upload, Image as ImageIcon
+  Bold, Italic, Upload, Image as ImageIcon, Search as SearchIcon, Shapes
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
-import { adminUploadAsset } from '@/services/templates';
+import { adminUploadAsset, getIcons } from '@/services/templates';
+import IconLibraryPanel from './IconLibraryPanel';
+import type { IconWithVariants, IconVariantDetail } from '@/lib/svgUtils';
 
 interface ElementPropertiesPanelProps {
   element: KonvaElement | null;
@@ -28,6 +31,23 @@ export default function ElementPropertiesPanel({
   onDuplicate,
 }: ElementPropertiesPanelProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showIconPickerModal, setShowIconPickerModal] = useState(false);
+
+  const { data: iconsData } = useQuery({
+    queryKey: ['icons'],
+    queryFn: () => getIcons(),
+    staleTime: 10 * 60 * 1000,
+    enabled: element?.element_type === 'contact_block',
+  });
+
+  const icons: IconWithVariants[] = iconsData?.results ?? iconsData ?? [];
+
+  const currentIcon = icons.find(icon => 
+    icon.variants.some(v => v.id === element?.icon_variant_id)
+  );
+
+  const availableVariants = currentIcon?.variants ?? 
+    (element?.icon_variant_detail ? [element.icon_variant_detail] : []);
 
   const onDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -141,79 +161,89 @@ export default function ElementPropertiesPanel({
         </div>
       </div>
 
-      {/* Section 3: Text Properties */}
-      {element.element_type === 'text' && (
+      {/* Section 3b: Contact Block Properties */}
+      {element.element_type === 'contact_block' && (
         <div className="p-4 space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Text Properties</h4>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500">Content</label>
-            <textarea
-              rows={4}
-              value={element.content || ''}
-              onChange={(e) => onChange({ content: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none resize-none"
-            />
-          </div>
-
+          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Contact Block Properties</h4>
+          
           <div className="space-y-3">
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-500">Font Family</label>
-                  <input
-                    type="text"
-                    value={element.font_family}
-                    onChange={(e) => onChange({ font_family: e.target.value })}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-500">Font Size</label>
-                  <input
-                    type="number"
-                    value={element.font_size}
-                    onChange={(e) => onChange({ font_size: parseInt(e.target.value) || 12 })}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  />
-                </div>
-             </div>
-
-             <div className="flex gap-2">
-                <SegmentedControl 
-                  options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'N', value: 'normal' }]}
-                  value={element.font_weight === 'bold' ? 'bold' : 'normal'}
-                  onChange={(v) => onChange({ font_weight: v as string })}
-                />
-                <SegmentedControl 
-                  options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'N', value: 'normal' }]}
-                  value={element.font_style === 'italic' ? 'italic' : 'normal'}
-                  onChange={(v) => onChange({ font_style: v as string })}
-                />
+             <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-500">Current Icon</label>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded capitalize">
+                  {element.placeholder_hint || 'Contact'}
+                </span>
              </div>
 
              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500">Alignment</label>
-                <div className="flex gap-1">
-                  {[
-                    { val: 'left', icon: AlignLeft },
-                    { val: 'center', icon: AlignCenter },
-                    { val: 'right', icon: AlignRight },
-                    { val: 'justify', icon: AlignJustify },
-                  ].map((btn) => (
+                <label className="text-xs font-semibold text-gray-400">Variant</label>
+                <div className="flex gap-1 flex-wrap">
+                  {availableVariants.map(v => (
                     <button
-                      key={btn.val}
-                      onClick={() => onChange({ text_align: btn.val })}
-                      className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all ${
-                        element.text_align === btn.val ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                      key={v.id}
+                      onClick={() => onChange({ 
+                        icon_variant_id: v.id, 
+                        icon_variant_detail: { ...v, icon_name: currentIcon?.name || element.placeholder_hint } 
+                      })}
+                      className={`px-2 py-1 rounded bg-gray-50 border text-[10px] font-medium transition-all capitalize ${
+                        element.icon_variant_id === v.id ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}
                     >
-                      <btn.icon size={14} />
+                      {v.variant}
                     </button>
                   ))}
                 </div>
              </div>
 
              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500">Color</label>
+                <label className="text-xs font-semibold text-gray-500">Icon Color</label>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-2 text-sm"
+                  >
+                    <div className="h-6 w-6 rounded-md border border-gray-100 shadow-inner" style={{ backgroundColor: element.icon_color || '#000000' }} />
+                    <span className="font-mono">{element.icon_color || '#000000'}</span>
+                  </button>
+                  {showColorPicker && (
+                    <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
+                      <HexColorPicker color={element.icon_color || '#000000'} onChange={(c) => onChange({ icon_color: c })} />
+                    </div>
+                  )}
+                </div>
+             </div>
+
+             <RangeSlider label="Icon Size" value={element.icon_size} min={10} max={64} step={1} onChange={(v) => onChange({ icon_size: v })} />
+             <RangeSlider label="Gap" value={element.icon_text_gap} min={0} max={40} step={1} onChange={(v) => onChange({ icon_text_gap: v })} />
+
+             <div className="pt-2">
+                <button
+                  onClick={() => setShowIconPickerModal(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <Shapes size={14} />
+                  CHANGE ICON
+                </button>
+             </div>
+          </div>
+
+          <div className="h-px bg-gray-100 my-2" />
+
+          <div className="space-y-3">
+             <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Label Text</h4>
+             <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500">Content</label>
+                <input
+                  type="text"
+                  value={element.content || ''}
+                  onChange={(e) => onChange({ content: e.target.value })}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+             </div>
+
+             <RangeSlider label="Font Size" value={element.font_size} min={6} max={48} step={0.5} onChange={(v) => onChange({ font_size: v })} />
+             
+             <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500">Text Color</label>
                 <div className="relative">
                   <button
                     onClick={() => setShowColorPicker(!showColorPicker)}
@@ -230,9 +260,35 @@ export default function ElementPropertiesPanel({
                 </div>
              </div>
 
-             <RangeSlider label="Line Height" value={element.line_height} min={1} max={3} step={0.1} onChange={(v) => onChange({ line_height: v })} />
-             <RangeSlider label="Letter Spacing" value={element.letter_spacing} min={-5} max={20} step={0.5} onChange={(v) => onChange({ letter_spacing: v })} />
+             <div className="flex gap-2">
+                <SegmentedControl 
+                  options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'N', value: 'normal' }]}
+                  value={element.font_weight === 'bold' ? 'bold' : 'normal'}
+                  onChange={(v) => onChange({ font_weight: v as string })}
+                />
+                <SegmentedControl 
+                  options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'N', value: 'normal' }]}
+                  value={element.font_style === 'italic' ? 'italic' : 'normal'}
+                  onChange={(v) => onChange({ font_style: v as string })}
+                />
+             </div>
           </div>
+
+          {showIconPickerModal && (
+            <IconLibraryPanel
+              isOpen={showIconPickerModal}
+              onClose={() => setShowIconPickerModal(false)}
+              onAddContactBlock={(variant, color) => {
+                const icon = icons.find(i => i.variants.some(v => v.id === variant.id));
+                onChange({
+                  icon_variant_id: variant.id,
+                  icon_variant_detail: { ...variant, icon_name: icon?.name || variant.icon_name },
+                  placeholder_hint: icon?.name || variant.icon_name,
+                });
+                setShowIconPickerModal(false);
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -332,6 +388,7 @@ export default function ElementPropertiesPanel({
 function getTypeColor(type: string) {
   switch (type) {
     case 'text': return 'bg-blue-100 text-blue-600';
+    case 'contact_block': return 'bg-indigo-100 text-indigo-600';
     case 'shape': return 'bg-purple-100 text-purple-600';
     case 'line': return 'bg-gray-100 text-gray-600';
     case 'image': return 'bg-amber-100 text-amber-600';

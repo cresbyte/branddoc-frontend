@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Group, Rect, Text, Image as KonvaImage, Transformer } from 'react-konva';
 import useImage from 'use-image';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
+import ContactBlockElement from './ContactBlockElement';
 
 interface CanvasElementProps {
   element: KonvaElement;
@@ -16,6 +17,18 @@ export default React.memo(function CanvasElement({
   onSelect,
   onChange,
 }: CanvasElementProps) {
+  // Delegate contact_block entirely to its own component
+  if (element.element_type === 'contact_block') {
+    return (
+      <ContactBlockElement
+        element={element}
+        isSelected={isSelected}
+        onSelect={onSelect}
+        onChange={onChange}
+      />
+    );
+  }
+
   const shapeRef = useRef<any>(null);
   const transformRef = useRef<any>(null);
   const [img] = useImage(element.asset_url || '', 'anonymous');
@@ -28,24 +41,16 @@ export default React.memo(function CanvasElement({
   }, [isSelected]);
 
   const handleDragEnd = (e: any) => {
-    onChange({
-      x: e.target.x(),
-      y: e.target.y(),
-    });
+    onChange({ x: e.target.x(), y: e.target.y() });
   };
 
   const handleTransformEnd = () => {
     if (!shapeRef.current) return;
     const node = shapeRef.current;
-    
-    // Konva scale is applied to the node, but we want to store absolute width/height
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-
-    // Reset scale to 1 and update width/height
     node.scaleX(1);
     node.scaleY(1);
-
     onChange({
       x: node.x(),
       y: node.y(),
@@ -117,7 +122,6 @@ export default React.memo(function CanvasElement({
             />
           );
         }
-        // Fallback for missing image
         return (
           <Rect
             {...commonProps}
@@ -141,10 +145,7 @@ export default React.memo(function CanvasElement({
         <Transformer
           ref={transformRef}
           boundBoxFunc={(oldBox, newBox) => {
-            // Limit minimum size
-            if (newBox.width < 5 || newBox.height < 5) {
-              return oldBox;
-            }
+            if (newBox.width < 5 || newBox.height < 5) return oldBox;
             return newBox;
           }}
         />

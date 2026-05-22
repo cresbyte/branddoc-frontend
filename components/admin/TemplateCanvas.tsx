@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Stage, Layer, Rect } from 'react-konva';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, Layers as LayersIcon } from 'lucide-react';
 import { useTemplateCanvas } from '@/hooks/useTemplateCanvas';
 import CanvasToolbar from './CanvasToolbar';
 import CanvasElement from './CanvasElement';
 import ElementPropertiesPanel from './ElementPropertiesPanel';
 import ElementsLayerPanel from './ElementsLayerPanel';
+import IconLibraryPanel from './IconLibraryPanel';
+import type { IconVariantDetail } from '@/lib/svgUtils';
 
 interface TemplateCanvasProps {
   templateId: string;
@@ -23,8 +25,67 @@ export default function TemplateCanvas({
   const hook = useTemplateCanvas(templateId, canvasWidth, canvasHeight);
   const scale = DISPLAY_WIDTH / canvasWidth;
   const displayHeight = canvasHeight * scale;
+  const [showIconLibrary, setShowIconLibrary] = useState(false);
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedElement = hook.elements.find(e => e.id === hook.selectedId && !e._deleted) || null;
+
+
+  const handleStageMouseDown = (e: any) => {
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty) hook.selectElement(null);
+  };
+
+  // ── Drag & drop from Icon Library Panel ──────────────────
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/contact-block')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData('application/contact-block');
+    if (!raw) return;
+
+    try {
+      const { variantDetail, iconColor } = JSON.parse(raw);
+      // Convert drop position to canvas coordinates
+      const canvasAreaEl = canvasAreaRef.current;
+      if (!canvasAreaEl) return;
+
+      // Find the white canvas div inside the scroll area
+      const canvasEl = canvasAreaEl.querySelector('[data-canvas-paper]') as HTMLElement;
+      if (!canvasEl) {
+        // Fallback: just drop near center
+        hook.addContactBlock(variantDetail, iconColor, 60, 60);
+        return;
+      }
+      const rect = canvasEl.getBoundingClientRect();
+      const dropX = (e.clientX - rect.left) / scale;
+      const dropY = (e.clientY - rect.top) / scale;
+
+      hook.addContactBlock(
+        variantDetail,
+        iconColor,
+        Math.max(0, Math.min(dropX, canvasWidth - 240)),
+        Math.max(0, Math.min(dropY, canvasHeight - 28)),
+      );
+    } catch (err) {
+      console.error('Icon drop parse error', err);
+    }
+  }, [hook, scale, canvasWidth, canvasHeight]);
+
+  // ── Handle adds from the panel's "Add to Canvas" button ──
+  const handleAddFromPanel = useCallback((
+    variantDetail: IconVariantDetail & { icon_name: string },
+    iconColor: string
+  ) => {
+    // Place at a visible default position
+    hook.addContactBlock(variantDetail, iconColor, 60, 80);
+    setShowIconLibrary(false);
+  }, [hook]);
 
   if (hook.isLoading) {
     return (
@@ -35,17 +96,9 @@ export default function TemplateCanvas({
     );
   }
 
-  const handleStageMouseDown = (e: any) => {
-    // clicked on stage directly
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) {
-      hook.selectElement(null);
-    }
-  };
-
   return (
     <div className="flex flex-col h-[calc(100vh-180px)]">
-      {/* 1. Sticky Toolbar */}
+      {/* 1. Toolbar */}
       <CanvasToolbar
         isDirty={hook.isDirty}
         isSaving={hook.isSaving}
@@ -56,29 +109,47 @@ export default function TemplateCanvas({
         onMoveUp={() => selectedElement && hook.moveElementLayer(selectedElement.id, 'up')}
         onMoveDown={() => selectedElement && hook.moveElementLayer(selectedElement.id, 'down')}
         onSave={hook.saveAll}
+        onOpenIconLibrary={() => setShowIconLibrary(v => !v)}
+        showIconLibrary={showIconLibrary}
       />
 
-      {/* 2. Main Layout Container */}
-      <div className="flex flex-1 gap-0 overflow-hidden border border-gray-200 rounded-2xl mt-4 bg-white shadow-xl ring-1 ring-black/5">
-        
-        {/* Left Sidebar: Layers */}
-        <div className="w-64 border-r border-gray-100 bg-gray-50/50 flex flex-col">
-          <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-gray-200 flex justify-between items-center bg-white/10">
-            Layers 
-            <span className="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[8px]">{hook.elements.filter(e => !e._deleted).length}</span>
+      {/* 2. Main layout */}
+      <div
+        className="flex flex-1 gap-0 overflow-hidden border border-gray-200 rounded-2xl mt-4 bg-white shadow-xl ring-1 ring-black/5"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        ref={canvasAreaRef}
+      >
+        {/* Icon Library Panel (slides in from left, over the layers panel) */}
+        <div className="relative">
+          <div className="w-64 border-r border-gray-100 bg-gray-50/50 flex flex-col h-full">
+            <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-gray-200 flex justify-between items-center bg-white/10">
+              Layers
+              <span className="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[8px]">
+                {hook.elements.filter(e => !e._deleted).length}
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <ElementsLayerPanel
+                elements={hook.elements.filter(e => !e._deleted)}
+                selectedId={hook.selectedId}
+                onSelect={hook.selectElement}
+              />
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <ElementsLayerPanel
-              elements={hook.elements.filter(e => !e._deleted)}
-              selectedId={hook.selectedId}
-              onSelect={hook.selectElement}
-            />
-          </div>
+
+          {/* Icon Library slides in over the layers panel */}
+          <IconLibraryPanel
+            isOpen={showIconLibrary}
+            onClose={() => setShowIconLibrary(false)}
+            onAddContactBlock={handleAddFromPanel}
+          />
         </div>
 
-        {/* Center: Canvas Area */}
+        {/* Center: Canvas */}
         <div className="flex-1 bg-gray-100/30 overflow-auto flex items-start justify-center p-12 custom-scrollbar">
           <div
+            data-canvas-paper
             className="flex-shrink-0"
             style={{
               width: DISPLAY_WIDTH,
@@ -97,17 +168,10 @@ export default function TemplateCanvas({
               onTouchStart={handleStageMouseDown}
             >
               <Layer scaleX={scale} scaleY={scale}>
-                {/* White Paper Area */}
-                <Rect
-                  width={canvasWidth}
-                  height={canvasHeight}
-                  fill="white"
-                />
-                
-                {/* Visual Elements */}
+                <Rect width={canvasWidth} height={canvasHeight} fill="white" />
                 {hook.elements
                   .filter(el => !el._deleted && el.is_visible)
-                  .sort((a, b) => a.z_index - b.z_index) // Render in z-index order
+                  .sort((a, b) => a.z_index - b.z_index)
                   .map(el => (
                     <CanvasElement
                       key={el.id}
@@ -121,7 +185,7 @@ export default function TemplateCanvas({
               </Layer>
             </Stage>
 
-            {/* Lock Overlays */}
+            {/* Lock overlays */}
             {hook.elements
               .filter(e => e.is_locked && !e._deleted)
               .map(e => (
@@ -143,7 +207,7 @@ export default function TemplateCanvas({
           </div>
         </div>
 
-        {/* Right Sidebar: Properties */}
+        {/* Right: Properties */}
         <div className="w-80 border-l border-gray-100 bg-white flex flex-col">
           <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-gray-100">
             Properties
@@ -160,22 +224,12 @@ export default function TemplateCanvas({
           </div>
         </div>
       </div>
-      
+
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e5e7eb;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #d1d5db;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
       `}</style>
     </div>
   );

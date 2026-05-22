@@ -7,10 +7,11 @@ import {
   adminUpdateElement, 
   adminDeleteElement 
 } from '@/services/templates';
+import { IconVariantDetail } from '@/lib/svgUtils';
 
 export interface KonvaElement {
   id: string;
-  element_type: 'text' | 'image' | 'svg' | 'shape' | 'line';
+  element_type: 'text' | 'image' | 'svg' | 'shape' | 'line' | 'contact_block';
   x: number;        // pixels on canvas
   y: number;
   width: number;
@@ -39,6 +40,12 @@ export interface KonvaElement {
   is_locked: boolean;
   is_visible: boolean;
   placeholder_hint: string;
+  // contact blockSpecific
+  icon_variant_id: string | null;
+  icon_variant_detail: IconVariantDetail | null;
+  icon_color: string;
+  icon_text_gap: number;
+  icon_size: number;
   // local only
   _isDirty?: boolean;
   _isNew?: boolean;
@@ -70,6 +77,11 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
         _isDirty: false,
         _isNew: false,
         _deleted: false,
+        icon_variant_id: el.icon_variant ?? null,
+        icon_variant_detail: el.icon_variant_detail ?? null,
+        icon_color: el.icon_color ?? '#000000',
+        icon_text_gap: el.icon_text_gap ?? 8,
+        icon_size: el.icon_size ?? 20,
       }));
       setElements(converted);
     }
@@ -126,6 +138,12 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
       is_locked: false,
       is_visible: true,
       placeholder_hint: '',
+      // icon/contact block fields
+      icon_variant_id: null,
+      icon_variant_detail: null,
+      icon_color: '#000000',
+      icon_text_gap: 8,
+      icon_size: 20,
       _isNew: true,
       _isDirty: true,
     };
@@ -145,6 +163,57 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
     setSelectedId(id);
   }, [elements, canvasWidth]);
 
+  const addContactBlock = useCallback((
+      iconVariantDetail: IconVariantDetail & { icon_name: string },
+      iconColor: string,
+      x: number = 60,
+      y: number = 60
+  ) => {
+      const newEl: KonvaElement = {
+          id: crypto.randomUUID(),
+          element_type: 'contact_block',
+          x,
+          y,
+          width: 240,
+          height: 28,
+          z_index: elements.length,
+          rotation: 0,
+          // Text
+          content: `Your ${iconVariantDetail.icon_name}`,
+          font_family: 'Inter',
+          font_size: 11,
+          font_weight: 'normal',
+          font_style: 'normal',
+          text_align: 'left',
+          color: '#333333',
+          line_height: 1.4,
+          letter_spacing: 0,
+          // Image/SVG
+          asset_url: '',
+          object_fit: 'contain',
+          // Shape
+          background_color: 'transparent',
+          border_radius: 0,
+          opacity: 1,
+          // Contact block specific
+          icon_variant_id: iconVariantDetail.id,
+          icon_variant_detail: iconVariantDetail,
+          icon_color: iconColor,
+          icon_text_gap: 8,
+          icon_size: 18,
+          // Flags
+          is_editable: true,
+          is_locked: false,
+          is_visible: true,
+          placeholder_hint: iconVariantDetail.icon_name,
+          // Local state
+          _isNew: true,
+          _isDirty: true,
+      }
+      setElements(prev => [...prev, newEl])
+      setSelectedId(newEl.id)
+  }, [elements.length, setSelectedId]);
+
   const deleteElement = useCallback((id: string) => {
     setElements(prev => prev.map(el => 
       el.id === id ? { ...el, _deleted: true } : el
@@ -158,7 +227,7 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
 
     const newId = crypto.randomUUID();
     const duplicated: KonvaElement = {
-      ...source,
+      ...source!,
       id: newId,
       x: source.x + 20,
       y: source.y + 20,
@@ -216,10 +285,15 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
 
       // CREATE
       for (const el of toCreate) {
-        const { id, _isNew, _isDirty, _deleted, ...data } = el;
+        const { 
+          id, _isNew, _isDirty, _deleted, 
+          icon_variant_id, icon_variant_detail, 
+          ...data 
+        } = el;
         const payload = {
           ...data,
           template: templateId,
+          icon_variant: icon_variant_id, // Map to backend field name
           x: (el.x / canvasWidth) * 100,
           y: (el.y / canvasHeight) * 100,
           width: (el.width / canvasWidth) * 100,
@@ -230,9 +304,14 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
 
       // UPDATE
       for (const el of toUpdate) {
-        const { id, _isNew, _isDirty, _deleted, ...data } = el;
+        const { 
+            id, _isNew, _isDirty, _deleted, 
+            icon_variant_id, icon_variant_detail, 
+            ...data 
+        } = el;
         const payload = {
           ...data,
+          icon_variant: icon_variant_id, // Map to backend field name
           x: (el.x / canvasWidth) * 100,
           y: (el.y / canvasHeight) * 100,
           width: (el.width / canvasWidth) * 100,
@@ -265,6 +344,7 @@ export function useTemplateCanvas(templateId: string, canvasWidth: number, canva
     deleteElement,
     duplicateElement,
     moveElementLayer,
+    addContactBlock,
     saveAll,
   };
 }

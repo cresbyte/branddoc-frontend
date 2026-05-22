@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Type, Square, Minus, Image as ImageIcon, Code2, 
-  Copy, Trash2, ChevronUp, ChevronDown, Save, Loader2 
+  Copy, Trash2, ChevronUp, ChevronDown, Save, Loader2, Shapes
 } from 'lucide-react';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
 
@@ -15,6 +15,8 @@ interface CanvasToolbarProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onSave: () => void;
+  showIconLibrary: boolean;
+  onOpenIconLibrary: () => void;
 }
 
 export default function CanvasToolbar({
@@ -27,6 +29,8 @@ export default function CanvasToolbar({
   onMoveUp,
   onMoveDown,
   onSave,
+  showIconLibrary,
+  onOpenIconLibrary,
 }: CanvasToolbarProps) {
   return (
     <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -38,6 +42,16 @@ export default function CanvasToolbar({
           <ToolbarButton onClick={() => onAddElement('line')} icon={Minus} label="Line" />
           <ToolbarButton onClick={() => onAddElement('image')} icon={ImageIcon} label="Image" />
           <ToolbarButton onClick={() => onAddElement('svg')} icon={Code2} label="SVG" />
+        </div>
+        
+        {/* Group 2: Icon Library */}
+        <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+          <ToolbarButton 
+            onClick={onOpenIconLibrary} 
+            icon={Shapes} 
+            label="Icons" 
+            active={showIconLibrary}
+          />
         </div>
 
         <div className="h-6 w-px bg-gray-200" />
@@ -97,19 +111,22 @@ interface ToolbarButtonProps {
   icon: any;
   label: string;
   disabled?: boolean;
+  active?: boolean;
   variant?: 'default' | 'danger';
 }
 
-function ToolbarButton({ onClick, icon: Icon, label, disabled, variant = 'default' }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, icon: Icon, label, disabled, active, variant = 'default' }: ToolbarButtonProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={label}
       className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-30 ${
-        variant === 'danger' 
-          ? 'text-red-600 hover:bg-red-50' 
-          : 'text-gray-600 hover:bg-gray-100'
+        active 
+          ? 'bg-blue-50 text-blue-600'
+          : variant === 'danger' 
+            ? 'text-red-600 hover:bg-red-50' 
+            : 'text-gray-600 hover:bg-gray-100'
       }`}
     >
       <Icon className="h-4 w-4" />
