@@ -11,6 +11,8 @@ interface ContactBlockElementProps {
     isSelected: boolean
     onSelect(): void
     onChange(changes: Partial<KonvaElement>): void
+    onDragMove?(e: any): void
+    onDragEnd?(e: any): void
 }
 
 export default function ContactBlockElement({
@@ -18,6 +20,8 @@ export default function ContactBlockElement({
     isSelected,
     onSelect,
     onChange,
+    onDragMove,
+    onDragEnd,
 }: ContactBlockElementProps) {
     const groupRef = useRef<any>(null)
     const trRef = useRef<any>(null)
@@ -83,7 +87,11 @@ export default function ContactBlockElement({
                 draggable={!element.is_locked}
                 onClick={onSelect}
                 onTap={onSelect}
-                onDragEnd={handleDragEnd}
+                onDragMove={onDragMove}
+                onDragEnd={(e) => {
+                    handleDragEnd(e);
+                    onDragEnd?.(e);
+                }}
                 onTransformEnd={handleTransformEnd}
             >
                 {/* Hit-area for dragging (invisible but captures events) */}

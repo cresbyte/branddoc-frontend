@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import * as Slider from '@radix-ui/react-slider';
-import { useDropzone } from 'react-dropzone';
 import { 
-  Trash2, Copy, Move, Maximize, RotateCw, 
-  Type, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Bold, Italic, Upload, Image as ImageIcon, Search as SearchIcon, Shapes
+  Trash2, Copy, Move, RotateCw, 
+  Bold, Italic, Shapes
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
-import { adminUploadAsset, getIcons } from '@/services/templates';
+import { getIcons } from '@/services/templates';
 import IconLibraryPanel from './IconLibraryPanel';
-import type { IconWithVariants, IconVariantDetail } from '@/lib/svgUtils';
+import type { IconWithVariants } from '@/lib/svgUtils';
+
+// Design System
+import { TextField } from '@/components/DesignSystem/TextField';
+import { SelectField } from '@/components/DesignSystem/SelectField';
+import { Button } from '@/components/DesignSystem/Button';
+import { ImageUpload } from '@/components/DesignSystem/ImageUpload';
 
 interface ElementPropertiesPanelProps {
   element: KonvaElement | null;
@@ -49,33 +53,6 @@ export default function ElementPropertiesPanel({
   const availableVariants = currentIcon?.variants ?? 
     (element?.icon_variant_detail ? [element.icon_variant_detail] : []);
 
-  const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    // Convert to base64 for immediate preview (as requested)
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      onChange({ asset_url: dataUrl });
-      
-      // TODO: replace with actual S3 upload when ready
-      try {
-        // We could also call the API here if we want to persist it as an asset
-        // await adminUploadAsset({ name: file.name, file_url: dataUrl, asset_type: 'image', template: templateId });
-      } catch (err) {
-        console.error('Asset upload failed', err);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': [], 'image/svg+xml': [] },
-    multiple: false,
-  });
-
   if (!element) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center text-gray-400">
@@ -101,21 +78,17 @@ export default function ElementPropertiesPanel({
             {element.element_type}
           </span>
           <div className="flex gap-2">
-            <button onClick={onDuplicate} className="p-1 text-gray-400 hover:text-blue-600"><Copy size={16} /></button>
-            <button onClick={onDelete} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+            <Button variant="ghost" size="sm" onClick={onDuplicate} className="p-1 h-8 w-8 text-slate-400 hover:text-slate-900" icon={Copy} />
+            <Button variant="ghost" size="sm" onClick={onDelete} className="p-1 h-8 w-8 text-slate-400 hover:text-red-600" icon={Trash2} />
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-500">Placeholder Hint</label>
-          <input
-            type="text"
-            value={element.placeholder_hint || ''}
-            onChange={(e) => onChange({ placeholder_hint: e.target.value })}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            placeholder="e.g. {{company_name}}"
-          />
-        </div>
+        <TextField
+          label="Placeholder Hint"
+          value={element.placeholder_hint || ''}
+          onChange={(e) => onChange({ placeholder_hint: e.target.value })}
+          placeholder="e.g. {{company_name}}"
+        />
 
         <div className="flex flex-wrap gap-4">
           <BooleanToggle 
@@ -138,44 +111,39 @@ export default function ElementPropertiesPanel({
 
       {/* Section 2: Position & Size */}
       <div className="p-4 space-y-4">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Position & Size</h4>
-        <div className="grid grid-cols-2 gap-4">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Position & Size</h4>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <NumberInput label="X" value={element.x} subLabel={`${pctX}%`} onChange={(v) => onChange({ x: v })} />
           <NumberInput label="Y" value={element.y} subLabel={`${pctY}%`} onChange={(v) => onChange({ y: v })} />
           <NumberInput label="Width" value={element.width} subLabel={`${pctW}%`} onChange={(v) => onChange({ width: v })} />
           <NumberInput label="Height" value={element.height} subLabel={`${pctH}%`} onChange={(v) => onChange({ height: v })} />
         </div>
-        <div className="space-y-1 mt-2">
-          <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-            <RotateCw size={12} /> Rotation
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={Math.round(element.rotation)}
-              onChange={(e) => onChange({ rotation: parseInt(e.target.value) || 0 })}
-              className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            <span className="text-xs text-gray-400">degrees</span>
-          </div>
+        <div className="mt-2">
+           <TextField
+            label="Rotation (degrees)"
+            type="number"
+            icon={RotateCw}
+            value={Math.round(element.rotation)}
+            onChange={(e) => onChange({ rotation: parseInt(e.target.value) || 0 })}
+          />
         </div>
       </div>
 
       {/* Section 3b: Contact Block Properties */}
       {element.element_type === 'contact_block' && (
         <div className="p-4 space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Contact Block Properties</h4>
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Contact Block Properties</h4>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-500">Current Icon</label>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded capitalize">
+                <label className="text-[13px] font-semibold text-slate-700">Current Icon</label>
+                <span className="text-[10px] font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded capitalize">
                   {element.placeholder_hint || 'Contact'}
                 </span>
              </div>
 
-             <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-400">Variant</label>
+             <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-slate-700">Variant</label>
                 <div className="flex gap-1 flex-wrap">
                   {availableVariants.map(v => (
                     <button
@@ -184,8 +152,8 @@ export default function ElementPropertiesPanel({
                         icon_variant_id: v.id, 
                         icon_variant_detail: { ...v, icon_name: currentIcon?.name || element.placeholder_hint } 
                       })}
-                      className={`px-2 py-1 rounded bg-gray-50 border text-[10px] font-medium transition-all capitalize ${
-                        element.icon_variant_id === v.id ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      className={`px-2 py-1 rounded bg-white border text-[10px] font-medium transition-all capitalize ${
+                        element.icon_variant_id === v.id ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}
                     >
                       {v.variant}
@@ -194,15 +162,15 @@ export default function ElementPropertiesPanel({
                 </div>
              </div>
 
-             <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500">Icon Color</label>
+             <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-slate-700">Icon Color</label>
                 <div className="relative">
                   <button
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-2 text-sm"
+                    className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm transition-all focus:border-slate-900"
                   >
-                    <div className="h-6 w-6 rounded-md border border-gray-100 shadow-inner" style={{ backgroundColor: element.icon_color || '#000000' }} />
-                    <span className="font-mono">{element.icon_color || '#000000'}</span>
+                    <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.icon_color || '#000000' }} />
+                    <span className="font-mono font-medium text-slate-900">{element.icon_color || '#000000'}</span>
                   </button>
                   {showColorPicker && (
                     <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
@@ -216,41 +184,40 @@ export default function ElementPropertiesPanel({
              <RangeSlider label="Gap" value={element.icon_text_gap} min={0} max={40} step={1} onChange={(v) => onChange({ icon_text_gap: v })} />
 
              <div className="pt-2">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
                   onClick={() => setShowIconPickerModal(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+                  icon={Shapes}
                 >
-                  <Shapes size={14} />
                   CHANGE ICON
-                </button>
+                </Button>
              </div>
           </div>
 
-          <div className="h-px bg-gray-100 my-2" />
+          <div className="h-px bg-slate-100 my-2" />
 
-          <div className="space-y-3">
-             <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Label Text</h4>
-             <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500">Content</label>
-                <input
-                  type="text"
-                  value={element.content || ''}
-                  onChange={(e) => onChange({ content: e.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                />
-             </div>
+          <div className="space-y-4">
+             <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Label Text</h4>
+             
+             <TextField
+              label="Content"
+              value={element.content || ''}
+              onChange={(e) => onChange({ content: e.target.value })}
+            />
 
              <RangeSlider label="Font Size" value={element.font_size} min={6} max={48} step={0.5} onChange={(v) => onChange({ font_size: v })} />
              
-             <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500">Text Color</label>
+             <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-slate-700">Text Color</label>
                 <div className="relative">
                   <button
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-2 text-sm"
+                    className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm transition-all focus:border-slate-900"
                   >
-                    <div className="h-6 w-6 rounded-md border border-gray-100 shadow-inner" style={{ backgroundColor: element.color }} />
-                    <span className="font-mono">{element.color}</span>
+                    <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.color }} />
+                    <span className="font-mono font-medium text-slate-900">{element.color}</span>
                   </button>
                   {showColorPicker && (
                     <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
@@ -262,12 +229,12 @@ export default function ElementPropertiesPanel({
 
              <div className="flex gap-2">
                 <SegmentedControl 
-                  options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'N', value: 'normal' }]}
+                  options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'Regular', value: 'normal' }]}
                   value={element.font_weight === 'bold' ? 'bold' : 'normal'}
                   onChange={(v) => onChange({ font_weight: v as string })}
                 />
                 <SegmentedControl 
-                  options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'N', value: 'normal' }]}
+                  options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'Regular', value: 'normal' }]}
                   value={element.font_style === 'italic' ? 'italic' : 'normal'}
                   onChange={(v) => onChange({ font_style: v as string })}
                 />
@@ -295,17 +262,17 @@ export default function ElementPropertiesPanel({
       {/* Section 4: Shape/Background */}
       {(element.element_type === 'shape' || element.element_type === 'line') && (
         <div className="p-4 space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Style Properties</h4>
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Style Properties</h4>
           
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500">Color</label>
+          <div className="space-y-2">
+            <label className="text-[13px] font-semibold text-slate-700">Color</label>
             <div className="relative">
               <button
                 onClick={() => setShowColorPicker(!showColorPicker)}
-                className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-2 text-sm"
+                className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm"
               >
-                <div className="h-6 w-6 rounded-md border border-gray-100 shadow-inner" style={{ backgroundColor: element.background_color }} />
-                <span className="font-mono">{element.background_color}</span>
+                <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.background_color }} />
+                <span className="font-mono font-medium text-slate-900">{element.background_color}</span>
               </button>
               {showColorPicker && (
                 <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
@@ -325,44 +292,31 @@ export default function ElementPropertiesPanel({
       {/* Section 5: Image/SVG */}
       {(element.element_type === 'image' || element.element_type === 'svg') && (
         <div className="p-4 space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Asset Properties</h4>
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Asset Properties</h4>
           
-          <div className="flex gap-4 items-center">
-            <div className="h-20 w-20 flex-shrink-0 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
-              {element.asset_url ? (
-                <img src={element.asset_url} className="w-full h-full object-contain" alt="Asset" />
-              ) : (
-                <ImageIcon className="text-gray-300" size={24} />
-              )}
-            </div>
-            <div className="flex-1 space-y-2">
-               <div {...getRootProps()} className={`p-3 rounded-lg bg-blue-50 border border-blue-100 flex flex-col items-center gap-1 cursor-pointer hover:bg-blue-100 transition-colors ${isDragActive ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`}>
-                  <input {...getInputProps()} />
-                  <Upload size={16} className="text-blue-600" />
-                  <span className="text-[10px] font-bold text-blue-700">UPLOAD ASSET</span>
-               </div>
-            </div>
-          </div>
+          <ImageUpload
+            label="Upload Asset"
+            value={element.asset_url || ''}
+            onChange={(url) => onChange({ asset_url: url })}
+          />
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500">Asset URL</label>
-            <input
-              type="text"
-              value={element.asset_url || ''}
-              onChange={(e) => onChange({ asset_url: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
-              placeholder="https://..."
-            />
-          </div>
+          <TextField
+            label="Asset URL"
+            value={element.asset_url || ''}
+            onChange={(e) => onChange({ asset_url: e.target.value })}
+            placeholder="https://..."
+          />
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500">Object Fit</label>
-            <SegmentedControl 
-              options={[{ label: 'Contain', value: 'contain' }, { label: 'Cover', value: 'cover' }, { label: 'Fill', value: 'fill' }]}
-              value={element.object_fit}
-              onChange={(v) => onChange({ object_fit: v as string })}
-            />
-          </div>
+          <SelectField
+            label="Object Fit"
+            value={element.object_fit}
+            onChange={(e) => onChange({ object_fit: e.target.value })}
+            options={[
+              { label: 'Contain', value: 'contain' },
+              { label: 'Cover', value: 'cover' },
+              { label: 'Fill', value: 'fill' }
+            ]}
+          />
 
           <RangeSlider label="Opacity" value={element.opacity} min={0} max={1} step={0.01} onChange={(v) => onChange({ opacity: v })} />
         </div>
@@ -370,16 +324,13 @@ export default function ElementPropertiesPanel({
 
       {/* Section 6: Z-Index */}
       <div className="p-4 space-y-4">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400">Layering</h4>
-        <div className="space-y-1 mt-2">
-          <label className="text-xs font-semibold text-gray-500">Z-Index</label>
-          <input
-            type="number"
-            value={element.z_index}
-            onChange={(e) => onChange({ z_index: parseInt(e.target.value) || 0 })}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
-        </div>
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Layering</h4>
+        <TextField
+          label="Z-Index"
+          type="number"
+          value={element.z_index}
+          onChange={(e) => onChange({ z_index: parseInt(e.target.value) || 0 })}
+        />
       </div>
     </div>
   );
@@ -387,27 +338,26 @@ export default function ElementPropertiesPanel({
 
 function getTypeColor(type: string) {
   switch (type) {
-    case 'text': return 'bg-blue-100 text-blue-600';
-    case 'contact_block': return 'bg-indigo-100 text-indigo-600';
-    case 'shape': return 'bg-purple-100 text-purple-600';
-    case 'line': return 'bg-gray-100 text-gray-600';
-    case 'image': return 'bg-amber-100 text-amber-600';
-    case 'svg': return 'bg-emerald-100 text-emerald-600';
-    default: return 'bg-gray-100 text-gray-600';
+    case 'text': return 'bg-blue-50 text-blue-600';
+    case 'contact_block': return 'bg-slate-100 text-slate-900';
+    case 'shape': return 'bg-slate-100 text-slate-900';
+    case 'line': return 'bg-slate-100 text-slate-900';
+    case 'image': return 'bg-slate-100 text-slate-900';
+    case 'svg': return 'bg-slate-100 text-slate-900';
+    default: return 'bg-slate-100 text-slate-900';
   }
 }
 
 function NumberInput({ label, value, subLabel, onChange }: { label: string, value: number, subLabel: string, onChange: (v: number) => void }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-semibold text-gray-500">{label}</label>
-      <input
+      <TextField
+        label={label}
         type="number"
         value={Math.round(value)}
         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
       />
-      <div className="text-[10px] text-gray-400 font-medium">{subLabel}</div>
+      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight pl-1">{subLabel}</div>
     </div>
   );
 }
@@ -417,24 +367,24 @@ function BooleanToggle({ label, value, onChange }: { label: string, value: boole
     <label className="flex items-center gap-2 cursor-pointer group">
       <div 
         onClick={() => onChange(!value)}
-        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${value ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300'}`}
+        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${value ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-300'}`}
       >
         {value && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
       </div>
-      <span className="text-xs text-gray-600 group-hover:text-blue-600 transition-colors font-medium">{label}</span>
+      <span className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors font-semibold uppercase tracking-tight">{label}</span>
     </label>
   );
 }
 
 function SegmentedControl({ options, value, onChange }: { options: { label: React.ReactNode, value: string }[], value: string, onChange: (v: string) => void }) {
   return (
-    <div className="flex gap-1 rounded-lg bg-gray-50 p-1 border border-gray-200">
+    <div className="flex gap-1 rounded-[10px] bg-slate-50 p-1 border border-slate-200">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`flex-1 flex items-center justify-center py-1 px-3 rounded-md text-xs font-medium transition-all ${
-            value === opt.value ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          className={`flex-1 flex items-center justify-center py-1.5 px-3 rounded-md text-[11px] font-bold uppercase tracking-tight transition-all ${
+            value === opt.value ? 'bg-white text-slate-900 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'
           }`}
         >
           {opt.label}
@@ -447,9 +397,9 @@ function SegmentedControl({ options, value, onChange }: { options: { label: Reac
 function RangeSlider({ label, value, min, max, step, onChange }: { label: string, value: number, min: number, max: number, step: number, onChange: (v: number) => void }) {
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center text-xs">
-        <label className="font-semibold text-gray-500">{label}</label>
-        <span className="font-medium text-gray-900">{typeof value === 'number' && (label.includes('Opacity') ? `${Math.round(value * 100)}%` : value.toFixed(1))}</span>
+      <div className="flex justify-between items-center text-[13px]">
+        <label className="font-semibold text-slate-700">{label}</label>
+        <span className="font-bold text-slate-900">{typeof value === 'number' && (label.includes('Opacity') ? `${Math.round(value * 100)}%` : value.toFixed(1))}</span>
       </div>
       <Slider.Root
         className="relative flex items-center select-none touch-none w-full h-5"
@@ -460,10 +410,10 @@ function RangeSlider({ label, value, min, max, step, onChange }: { label: string
         value={[value]}
         onValueChange={([v]) => onChange(v)}
       >
-        <Slider.Track className="bg-gray-200 relative grow rounded-full h-1">
-          <Slider.Range className="absolute bg-blue-500 rounded-full h-full" />
+        <Slider.Track className="bg-slate-100 relative grow rounded-full h-1">
+          <Slider.Range className="absolute bg-slate-900 rounded-full h-full" />
         </Slider.Track>
-        <Slider.Thumb className="block w-4 h-4 bg-white border-2 border-blue-500 shadow-lg rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <Slider.Thumb className="block w-4 h-4 bg-white border-2 border-slate-900 shadow-sm rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10" />
       </Slider.Root>
     </div>
   );

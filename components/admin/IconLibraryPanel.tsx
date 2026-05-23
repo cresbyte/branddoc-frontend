@@ -19,6 +19,7 @@ interface IconLibraryPanelProps {
         variantDetail: IconVariantDetail & { icon_name: string },
         iconColor: string
     ): void
+    inlineMode?: boolean
 }
 
 // ── Single icon card ────────────────────────────────────
@@ -281,6 +282,7 @@ export default function IconLibraryPanel({
     isOpen,
     onClose,
     onAddContactBlock,
+    inlineMode = false,
 }: IconLibraryPanelProps) {
     const [search, setSearch] = useState('')
 
@@ -322,111 +324,69 @@ export default function IconLibraryPanel({
 
     if (!isOpen) return null
 
+    const containerClasses = inlineMode 
+        ? "flex flex-col h-full w-full bg-transparent overflow-hidden"
+        : "absolute left-0 top-0 h-full w-72 bg-white border-r border-gray-200 shadow-2xl z-40 flex flex-col animate-in slide-in-from-left-2 duration-200"
+
     return (
         <>
-            {/* Overlay backdrop */}
-            <div
-                className="fixed inset-0 z-30 bg-black/10"
-                onClick={onClose}
-            />
+            {!inlineMode && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/10"
+                    onClick={onClose}
+                />
+            )}
 
-            {/* Panel */}
             <div
-                className="absolute left-0 top-0 h-full w-72 
-                           bg-white border-r border-gray-200 
-                           shadow-2xl z-40 flex flex-col
-                           animate-in slide-in-from-left-2 
-                           duration-200"
-                // Prevent drag events from propagating 
-                // to the canvas drop handler
+                className={containerClasses}
                 onDragOver={e => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between 
-                               px-4 py-3 border-b border-gray-200 
-                               bg-white flex-shrink-0">
-                    <h3 className="text-sm font-bold text-gray-900">
-                        Icon Library
-                    </h3>
-                    <button
-                        onClick={onClose}
-                        className="rounded-lg p-1.5 
-                                   hover:bg-gray-100 
-                                   transition-colors"
-                    >
-                        <X size={16} className="text-gray-500" />
-                    </button>
-                </div>
+                {!inlineMode && (
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
+                        <h3 className="text-sm font-bold text-gray-900">Icon Library</h3>
+                        <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-gray-100 transition-colors">
+                            <X size={16} className="text-gray-500" />
+                        </button>
+                    </div>
+                )}
 
-                {/* Search */}
-                <div className="px-4 py-3 border-b border-gray-100 
-                               flex-shrink-0">
+                <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
                     <div className="relative">
-                        <Search
-                            size={14}
-                            className="absolute left-3 top-1/2 
-                                      -translate-y-1/2 text-gray-400"
-                        />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search icons..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-8 pr-3 py-2 text-sm 
-                                      border border-gray-200 rounded-lg 
-                                      focus:outline-none focus:ring-2 
-                                      focus:ring-blue-500 
-                                      focus:border-transparent
-                                      bg-gray-50"
+                            className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition-all"
                         />
                     </div>
                 </div>
 
-                {/* Drag tip */}
-                <div className="px-4 py-2 bg-blue-50 border-b 
-                               border-blue-100 flex-shrink-0">
-                    <p className="text-[10px] text-blue-600">
-                        Drag an icon onto the canvas or click 
-                        "Add to Canvas"
-                    </p>
-                </div>
-
-                {/* Icon list */}
-                <div className="flex-1 overflow-y-auto py-2">
+                <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
                     {isLoading ? (
                         <div className="flex flex-col gap-2 px-3 py-4">
-                            {[...Array(6)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="h-32 bg-gray-100 
-                                               rounded-xl animate-pulse"
-                                />
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
                             ))}
                         </div>
                     ) : grouped.length === 0 ? (
-                        <div className="flex flex-col items-center 
-                                       justify-center py-12 px-4 
-                                       text-center">
-                            <p className="text-sm font-medium 
-                                         text-gray-500">
-                                No icons found
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                                Try a different search term
-                            </p>
+                        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <p className="text-sm font-medium text-gray-500">No icons found</p>
+                            <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
                         </div>
                     ) : (
                         grouped.map(([category, catIcons]) => (
-                            <CategorySection
-                                key={category}
-                                category={category}
-                                icons={catIcons}
-                                onAdd={onAddContactBlock}
-                            />
+                            <CategorySection key={category} category={category} icons={catIcons} onAdd={onAddContactBlock} />
                         ))
                     )}
                 </div>
             </div>
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+            `}</style>
         </>
     )
 }

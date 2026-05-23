@@ -101,6 +101,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Check if we are in the admin template editor
+  const isTemplateEditor = pathname.startsWith("/dashboard/admin/templates/") && 
+                           pathname.split("/").length === 5;
+
+  if (isTemplateEditor) {
+    return <div className="h-screen w-screen overflow-hidden bg-white">{children}</div>;
+  }
+
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "?";
 
   return (
