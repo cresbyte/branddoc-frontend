@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import * as Slider from '@radix-ui/react-slider';
 import { 
   Trash2, Copy, Move, RotateCw, 
-  Bold, Italic, Shapes
+  Bold, Italic, Shapes, Pipette, RefreshCw
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
 import { getIcons } from '@/services/templates';
 import IconLibraryPanel from './IconLibraryPanel';
 import type { IconWithVariants } from '@/lib/svgUtils';
+import {
+  extractSvgColors,
+  fetchSvgText,
+  recolorSvgText,
+  svgTextToDataUrl,
+} from '@/lib/svgColorUtils';
 
 // Design System
 import { TextField } from '@/components/DesignSystem/TextField';
@@ -36,6 +42,12 @@ export default function ElementPropertiesPanel({
 }: ElementPropertiesPanelProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showIconPickerModal, setShowIconPickerModal] = useState(false);
+  // SVG color state
+  const [svgText, setSvgText] = useState<string | null>(null);
+  const [svgColors, setSvgColors] = useState<string[]>([]);
+  const [svgColorLoading, setSvgColorLoading] = useState(false);
+  const [editingColorIdx, setEditingColorIdx] = useState<number | null>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
 
   const { data: iconsData } = useQuery({
     queryKey: ['icons'],
@@ -52,6 +64,52 @@ export default function ElementPropertiesPanel({
 
   const availableVariants = currentIcon?.variants ?? 
     (element?.icon_variant_detail ? [element.icon_variant_detail] : []);
+
+  // Fetch and parse SVG colors when an SVG element is selected
+  useEffect(() => {
+    if (element?.element_type !== 'svg' || !element.asset_url) {
+      setSvgText(null);
+      setSvgColors([]);
+      setEditingColorIdx(null);
+      return;
+    }
+
+    setSvgColorLoading(true);
+    setSvgColors([]);
+    setSvgText(null);
+    setEditingColorIdx(null);
+
+    fetchSvgText(element.asset_url)
+      .then((text) => {
+        setSvgText(text);
+        setSvgColors(extractSvgColors(text));
+      })
+      .catch((err) => {
+        console.warn('Could not fetch SVG for color extraction', err);
+      })
+      .finally(() => setSvgColorLoading(false));
+  }, [element?.element_type, element?.asset_url]);
+
+  // Close color picker on outside click
+  useEffect(() => {
+    if (editingColorIdx === null) return;
+    const handler = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setEditingColorIdx(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [editingColorIdx]);
+
+  const handleSvgColorChange = (oldColor: string, newColor: string) => {
+    if (!svgText) return;
+    const recolored = recolorSvgText(svgText, oldColor, newColor);
+    setSvgText(recolored);
+    setSvgColors(prev => prev.map(c => c.toLowerCase() === oldColor.toLowerCase() ? newColor : c));
+    const dataUrl = svgTextToDataUrl(recolored);
+    onChange({ asset_url: dataUrl });
+  };
 
   if (!element) {
     return (
@@ -129,6 +187,73 @@ export default function ElementPropertiesPanel({
         </div>
       </div>
 
+      {/* Section 3: Text Properties */}
+      {element.element_type === 'text' && (
+        <div className="p-4 space-y-4">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Text Style</h4>
+
+          <TextField
+            label="Content"
+            value={element.content || ''}
+            onChange={(e) => onChange({ content: e.target.value })}
+            placeholder="Enter text content…"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <SelectField
+              label="Font Family"
+              value={element.font_family}
+              onChange={(e) => onChange({ font_family: e.target.value })}
+              options={[
+                'Inter', 'Georgia', 'Times New Roman', 'Arial', 'Helvetica',
+                'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Playfair Display',
+              ].map(f => ({ value: f, label: f }))}
+            />
+            <TextField
+              label="Font Size"
+              type="number"
+              value={element.font_size}
+              onChange={(e) => onChange({ font_size: parseFloat(e.target.value) || 12 })}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <SegmentedControl
+              options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'Regular', value: 'normal' }]}
+              value={element.font_weight === 'bold' ? 'bold' : 'normal'}
+              onChange={(v) => onChange({ font_weight: v as string })}
+            />
+            <SegmentedControl
+              options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'Regular', value: 'normal' }]}
+              value={element.font_style === 'italic' ? 'italic' : 'normal'}
+              onChange={(v) => onChange({ font_style: v as string })}
+            />
+          </div>
+
+          <SelectField
+            label="Text Align"
+            value={element.text_align}
+            onChange={(e) => onChange({ text_align: e.target.value })}
+            options={[
+              { value: 'left', label: 'Left' },
+              { value: 'center', label: 'Center' },
+              { value: 'right', label: 'Right' },
+              { value: 'justify', label: 'Justify' },
+            ]}
+          />
+
+          <ColorPickerField
+            label="Text Color"
+            color={element.color}
+            onChange={(c) => onChange({ color: c })}
+          />
+
+          <RangeSlider label="Line Height" value={element.line_height} min={1} max={3} step={0.05} onChange={(v) => onChange({ line_height: v })} />
+          <RangeSlider label="Letter Spacing" value={element.letter_spacing} min={-5} max={20} step={0.5} onChange={(v) => onChange({ letter_spacing: v })} />
+          <RangeSlider label="Opacity" value={element.opacity} min={0} max={1} step={0.01} onChange={(v) => onChange({ opacity: v })} />
+        </div>
+      )}
+
       {/* Section 3b: Contact Block Properties */}
       {element.element_type === 'contact_block' && (
         <div className="p-4 space-y-4">
@@ -162,23 +287,11 @@ export default function ElementPropertiesPanel({
                 </div>
              </div>
 
-             <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-slate-700">Icon Color</label>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm transition-all focus:border-slate-900"
-                  >
-                    <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.icon_color || '#000000' }} />
-                    <span className="font-mono font-medium text-slate-900">{element.icon_color || '#000000'}</span>
-                  </button>
-                  {showColorPicker && (
-                    <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
-                      <HexColorPicker color={element.icon_color || '#000000'} onChange={(c) => onChange({ icon_color: c })} />
-                    </div>
-                  )}
-                </div>
-             </div>
+             <ColorPickerField
+               label="Icon Color"
+               color={element.icon_color || '#000000'}
+               onChange={(c) => onChange({ icon_color: c })}
+             />
 
              <RangeSlider label="Icon Size" value={element.icon_size} min={10} max={64} step={1} onChange={(v) => onChange({ icon_size: v })} />
              <RangeSlider label="Gap" value={element.icon_text_gap} min={0} max={40} step={1} onChange={(v) => onChange({ icon_text_gap: v })} />
@@ -208,24 +321,12 @@ export default function ElementPropertiesPanel({
             />
 
              <RangeSlider label="Font Size" value={element.font_size} min={6} max={48} step={0.5} onChange={(v) => onChange({ font_size: v })} />
-             
-             <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-slate-700">Text Color</label>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm transition-all focus:border-slate-900"
-                  >
-                    <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.color }} />
-                    <span className="font-mono font-medium text-slate-900">{element.color}</span>
-                  </button>
-                  {showColorPicker && (
-                    <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
-                      <HexColorPicker color={element.color} onChange={(c) => onChange({ color: c })} />
-                    </div>
-                  )}
-                </div>
-             </div>
+
+             <ColorPickerField
+               label="Text Color"
+               color={element.color}
+               onChange={(c) => onChange({ color: c })}
+             />
 
              <div className="flex gap-2">
                 <SegmentedControl 
@@ -264,23 +365,11 @@ export default function ElementPropertiesPanel({
         <div className="p-4 space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Style Properties</h4>
           
-          <div className="space-y-2">
-            <label className="text-[13px] font-semibold text-slate-700">Color</label>
-            <div className="relative">
-              <button
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm"
-              >
-                <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner" style={{ backgroundColor: element.background_color }} />
-                <span className="font-mono font-medium text-slate-900">{element.background_color}</span>
-              </button>
-              {showColorPicker && (
-                <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
-                  <HexColorPicker color={element.background_color} onChange={(c) => onChange({ background_color: c })} />
-                </div>
-              )}
-            </div>
-          </div>
+          <ColorPickerField
+            label="Color"
+            color={element.background_color}
+            onChange={(c) => onChange({ background_color: c })}
+          />
 
           {element.element_type === 'shape' && (
             <RangeSlider label="Border Radius" value={element.border_radius} min={0} max={100} step={1} onChange={(v) => onChange({ border_radius: v })} />
@@ -319,6 +408,88 @@ export default function ElementPropertiesPanel({
           />
 
           <RangeSlider label="Opacity" value={element.opacity} min={0} max={1} step={0.01} onChange={(v) => onChange({ opacity: v })} />
+
+          {/* SVG Color Detection — Canva-style */}
+          {element.element_type === 'svg' && element.asset_url && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <Pipette size={11} />
+                  SVG Colors
+                </h4>
+                {svgColorLoading && (
+                  <span className="text-[10px] text-slate-400 animate-pulse">Detecting…</span>
+                )}
+                {!svgColorLoading && svgText && (
+                  <button
+                    className="text-[10px] text-slate-400 hover:text-slate-700 flex items-center gap-1 transition-colors"
+                    onClick={() => {
+                      setSvgColorLoading(true);
+                      fetchSvgText(element.asset_url!)
+                        .then(t => { setSvgText(t); setSvgColors(extractSvgColors(t)); })
+                        .finally(() => setSvgColorLoading(false));
+                    }}
+                  >
+                    <RefreshCw size={9} /> Refresh
+                  </button>
+                )}
+              </div>
+
+              {!svgColorLoading && svgColors.length === 0 && svgText && (
+                <p className="text-[11px] text-slate-400 italic">No editable colors detected in this SVG.</p>
+              )}
+
+              {!svgColorLoading && svgColors.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-slate-500">Click a color swatch to edit it</p>
+                  <div className="flex flex-wrap gap-2">
+                    {svgColors.map((color, idx) => (
+                      <div key={`${color}-${idx}`} className="relative" ref={editingColorIdx === idx ? colorPickerRef : undefined}>
+                        <button
+                          onClick={() => setEditingColorIdx(editingColorIdx === idx ? null : idx)}
+                          className={`group relative flex flex-col items-center gap-1 transition-all`}
+                          title={color}
+                        >
+                          <div
+                            className={`w-9 h-9 rounded-xl border-2 shadow-sm transition-all ${
+                              editingColorIdx === idx
+                                ? 'border-indigo-500 scale-110 shadow-indigo-200'
+                                : 'border-slate-200 hover:border-slate-400 hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="text-[8px] font-mono text-slate-400 group-hover:text-slate-600 transition-colors">
+                            {color.toUpperCase()}
+                          </span>
+                        </button>
+
+                        {editingColorIdx === idx && (
+                          <div className="absolute left-0 top-full mt-2 z-30 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5 min-w-[220px]">
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                              Replace color
+                            </div>
+                            <HexColorPicker
+                              color={color}
+                              onChange={(newColor) => handleSvgColorChange(color, newColor)}
+                            />
+                            <input
+                              className="mt-2 w-full text-[11px] font-mono text-center border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                              value={color}
+                              onChange={(e) => {
+                                if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                                  handleSvgColorChange(color, e.target.value.toLowerCase());
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -336,14 +507,56 @@ export default function ElementPropertiesPanel({
   );
 }
 
+// Reusable inline color picker field
+function ColorPickerField({ label, color, onChange }: { label: string; color: string; onChange: (c: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="space-y-2">
+      <label className="text-[13px] font-semibold text-slate-700">{label}</label>
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="flex w-full items-center gap-3 rounded-[10px] border-[1.5px] border-slate-200 bg-white p-2 text-sm transition-all focus:border-slate-900 hover:border-slate-300"
+        >
+          <div className="h-6 w-6 rounded-md border border-slate-100 shadow-inner flex-shrink-0" style={{ backgroundColor: color }} />
+          <span className="font-mono font-medium text-slate-900 text-[12px]">{color}</span>
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full z-20 mt-2 rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
+            <HexColorPicker color={color} onChange={onChange} />
+            <input
+              className="mt-2 w-full text-[11px] font-mono text-center border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              value={color}
+              onChange={(e) => {
+                if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) onChange(e.target.value);
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function getTypeColor(type: string) {
   switch (type) {
     case 'text': return 'bg-blue-50 text-blue-600';
-    case 'contact_block': return 'bg-slate-100 text-slate-900';
-    case 'shape': return 'bg-slate-100 text-slate-900';
-    case 'line': return 'bg-slate-100 text-slate-900';
-    case 'image': return 'bg-slate-100 text-slate-900';
-    case 'svg': return 'bg-slate-100 text-slate-900';
+    case 'contact_block': return 'bg-purple-50 text-purple-600';
+    case 'shape': return 'bg-emerald-50 text-emerald-600';
+    case 'line': return 'bg-slate-100 text-slate-600';
+    case 'image': return 'bg-amber-50 text-amber-600';
+    case 'svg': return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-900';
   }
 }

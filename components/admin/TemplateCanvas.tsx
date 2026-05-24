@@ -1,9 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Stage, Layer, Rect, Line } from 'react-konva';
 import { 
   Loader2, Lock, Layers as LayersIcon, 
   Settings, Type, Shapes, Plus, Save, ChevronLeft,
-  Square, Minus, Image as ImageIcon, Code2
+  Square, Minus, Image as ImageIcon, Code2,
+  Bold, Italic, Underline, Strikethrough, AlignLeft,
+  AlignCenter, AlignRight, AlignJustify, Palette,
+  RotateCcw
 } from 'lucide-react';
 import { useTemplateCanvas, KonvaElement } from '@/hooks/useTemplateCanvas';
 import CanvasElement from './CanvasElement';
@@ -18,6 +21,7 @@ import { ImageUpload } from '@/components/DesignSystem/ImageUpload';
 import { useRouter } from 'next/navigation';
 import type { IconVariantDetail } from '@/lib/svgUtils';
 import { getSnappingGuides, Guide } from '@/lib/snappingUtils';
+import { HexColorPicker } from 'react-colorful';
 
 interface TemplateCanvasProps {
   templateId: string;
@@ -30,9 +34,12 @@ interface TemplateCanvasProps {
 }
 
 const DISPLAY_WIDTH = 580;
-
 const CATEGORIES = ["letterhead", "invoice", "certificate", "proposal", "other"];
 const STATUSES = ["draft", "published", "archived"];
+const FONT_FAMILIES = [
+  'Inter', 'Georgia', 'Times New Roman', 'Arial', 'Helvetica',
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Playfair Display'
+];
 
 export default function TemplateCanvas({
   templateId,
@@ -51,18 +58,91 @@ export default function TemplateCanvas({
   const [leftTab, setLeftTab] = useState<'layers' | 'add' | 'icons'>('layers');
   const [rightTab, setRightTab] = useState<'properties' | 'settings'>('properties');
   const [guides, setGuides] = useState<Guide[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
+  const editOverlayRef = useRef<HTMLDivElement>(null);
+  const textColorPickerRef = useRef<HTMLDivElement>(null);
 
   const selectedElement = hook.elements.find(e => e.id === hook.selectedId && !e._deleted) || null;
+  const editingElement = hook.elements.find(e => e.id === editingId && !e._deleted) || null;
 
   // Auto-switch to properties tab when an element is selected
-  React.useEffect(() => {
+  useEffect(() => {
     if (hook.selectedId) setRightTab('properties');
   }, [hook.selectedId]);
 
+  // Close text-color picker on outside click
+  useEffect(() => {
+    if (!showTextColorPicker) return;
+    const handler = (e: MouseEvent) => {
+      if (textColorPickerRef.current && !textColorPickerRef.current.contains(e.target as Node)) {
+        setShowTextColorPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showTextColorPicker]);
+
+  // When inline editing starts, populate the overlay with element content and focus
+  useEffect(() => {
+    if (!editingId || !editOverlayRef.current || !editingElement) return;
+    // Set initial content only when entering edit mode
+    editOverlayRef.current.innerText = editingElement.content || '';
+    editOverlayRef.current.focus();
+    // Place cursor at end
+    const range = document.createRange();
+    range.selectNodeContents(editOverlayRef.current);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId]); // intentionally only on editingId change
+
+  const commitTextEdit = useCallback(() => {
+    if (!editingId || !editOverlayRef.current) return;
+    const text = editOverlayRef.current.innerText;
+    if (text.trim() !== '') {
+      hook.updateElement(editingId, { content: text });
+    }
+    setEditingId(null);
+    setShowTextColorPicker(false);
+  }, [editingId, hook]);
+
   const handleStageMouseDown = (e: any) => {
     const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) hook.selectElement(null);
+    if (clickedOnEmpty) {
+      hook.selectElement(null);
+      if (editingId) commitTextEdit();
+    }
+  };
+
+  const handleCanvasAreaClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // If clicking the canvas area bg (not a child element), deselect
+    if (e.target === canvasAreaRef.current) {
+      hook.selectElement(null);
+      if (editingId) commitTextEdit();
+    }
+  };
+
+  const handleDoubleClick = useCallback((id: string) => {
+    const el = hook.elements.find(e => e.id === id);
+    if (!el || el.element_type !== 'text' || el.is_locked) return;
+    hook.selectElement(id);
+    setEditingId(id);
+  }, [hook]);
+
+  const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      commitTextEdit();
+    }
+  };
+
+  // Rich text commands
+  const execCmd = (cmd: string, value?: string) => {
+    editOverlayRef.current?.focus();
+    document.execCommand(cmd, false, value);
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -113,29 +193,28 @@ export default function TemplateCanvas({
     const draggingElement = hook.elements.find(el => el.id === id);
     if (!draggingElement) return;
 
-    // We need to calculate based on the stage's current drag node
     const node = e.target;
     const tempElement = {
-        ...draggingElement,
-        x: node.x(),
-        y: node.y(),
+      ...draggingElement,
+      x: node.x(),
+      y: node.y(),
     };
 
     const snapResult = getSnappingGuides(
-        tempElement,
-        hook.elements.filter(el => el.id !== id),
-        canvasWidth,
-        canvasHeight
+      tempElement,
+      hook.elements.filter(el => el.id !== id),
+      canvasWidth,
+      canvasHeight
     );
 
     const newGuides: Guide[] = [];
     if (snapResult.v) {
-        node.x(snapResult.v.offset);
-        newGuides.push({ type: 'V', pos: snapResult.v.lineGuide });
+      node.x(snapResult.v.offset);
+      newGuides.push({ type: 'V', pos: snapResult.v.lineGuide });
     }
     if (snapResult.h) {
-        node.y(snapResult.h.offset);
-        newGuides.push({ type: 'H', pos: snapResult.h.lineGuide });
+      node.y(snapResult.h.offset);
+      newGuides.push({ type: 'H', pos: snapResult.h.lineGuide });
     }
     setGuides(newGuides);
   }, [hook.elements, canvasWidth, canvasHeight]);
@@ -143,6 +222,46 @@ export default function TemplateCanvas({
   const handleDragEnd = useCallback(() => {
     setGuides([]);
   }, []);
+
+  // Compute overlay position for inline text editor
+  const getOverlayStyle = (): React.CSSProperties => {
+    if (!editingElement || !canvasAreaRef.current) return { display: 'none' };
+    const paper = canvasAreaRef.current.querySelector('[data-canvas-paper]') as HTMLElement;
+    if (!paper) return { display: 'none' };
+    const paperRect = paper.getBoundingClientRect();
+    const containerRect = canvasAreaRef.current.getBoundingClientRect();
+
+    const left = paperRect.left - containerRect.left + editingElement.x * scale;
+    const top = paperRect.top - containerRect.top + editingElement.y * scale;
+
+    return {
+      position: 'absolute',
+      left,
+      top,
+      width: editingElement.width * scale,
+      minHeight: editingElement.height * scale,
+      fontSize: editingElement.font_size * scale,
+      fontFamily: editingElement.font_family,
+      fontWeight: editingElement.font_weight,
+      fontStyle: editingElement.font_style,
+      color: editingElement.color,
+      textAlign: editingElement.text_align as any,
+      lineHeight: editingElement.line_height,
+      letterSpacing: editingElement.letter_spacing * scale,
+      outline: '2px solid #6366f1',
+      outlineOffset: 2,
+      borderRadius: 2,
+      padding: 0,
+      margin: 0,
+      background: 'rgba(255,255,255,0.05)',
+      zIndex: 50,
+      cursor: 'text',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+      overflow: 'visible',
+      boxSizing: 'border-box',
+    };
+  };
 
   if (hook.isLoading) {
     return (
@@ -206,7 +325,136 @@ export default function TemplateCanvas({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         ref={canvasAreaRef}
+        onClick={handleCanvasAreaClick}
       >
+        {/* Rich Text Toolbar — shown only when inline editing */}
+        {editingId && editingElement && (
+          <div
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-white border border-slate-200 rounded-xl shadow-xl px-3 py-2 animate-in fade-in slide-in-from-top-2 duration-200"
+            onMouseDown={(e) => e.preventDefault()} // prevent overlay blur
+          >
+            {/* Font Family */}
+            <select
+              className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 mr-1"
+              value={editingElement.font_family}
+              onChange={(e) => {
+                hook.updateElement(editingId, { font_family: e.target.value });
+                editOverlayRef.current?.focus();
+              }}
+            >
+              {FONT_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+
+            {/* Font Size */}
+            <div className="flex items-center gap-0.5 border border-slate-200 rounded-lg overflow-hidden mr-1">
+              <button
+                className="w-6 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-50 text-lg font-bold"
+                onMouseDown={(e) => { e.preventDefault(); hook.updateElement(editingId, { font_size: Math.max(6, editingElement.font_size - 1) }); }}
+              >−</button>
+              <input
+                type="number"
+                className="w-10 h-7 text-center text-[11px] font-bold text-slate-900 border-0 focus:outline-none bg-white"
+                value={editingElement.font_size}
+                onChange={(e) => hook.updateElement(editingId, { font_size: parseInt(e.target.value) || 12 })}
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+              <button
+                className="w-6 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-50 text-lg font-bold"
+                onMouseDown={(e) => { e.preventDefault(); hook.updateElement(editingId, { font_size: editingElement.font_size + 1 }); }}
+              >+</button>
+            </div>
+
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+
+            {/* Bold */}
+            <ToolbarBtn
+              active={editingElement.font_weight === 'bold'}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const next = editingElement.font_weight === 'bold' ? 'normal' : 'bold';
+                hook.updateElement(editingId, { font_weight: next });
+              }}
+              title="Bold"
+            >
+              <Bold size={14} />
+            </ToolbarBtn>
+
+            {/* Italic */}
+            <ToolbarBtn
+              active={editingElement.font_style === 'italic'}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const next = editingElement.font_style === 'italic' ? 'normal' : 'italic';
+                hook.updateElement(editingId, { font_style: next });
+              }}
+              title="Italic"
+            >
+              <Italic size={14} />
+            </ToolbarBtn>
+
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+
+            {/* Alignment */}
+            {(['left', 'center', 'right', 'justify'] as const).map((align) => {
+              const icons = { left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify };
+              const Icon = icons[align];
+              return (
+                <ToolbarBtn
+                  key={align}
+                  active={editingElement.text_align === align}
+                  onMouseDown={(e) => { e.preventDefault(); hook.updateElement(editingId, { text_align: align }); }}
+                  title={`Align ${align}`}
+                >
+                  <Icon size={14} />
+                </ToolbarBtn>
+              );
+            })}
+
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+
+            {/* Text Color */}
+            <div className="relative" ref={textColorPickerRef}>
+              <button
+                className="flex items-center justify-center w-8 h-7 rounded-lg hover:bg-slate-50 transition-colors relative"
+                onMouseDown={(e) => { e.preventDefault(); setShowTextColorPicker(v => !v); }}
+                title="Text color"
+              >
+                <Palette size={14} className="text-slate-600" />
+                <div
+                  className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full"
+                  style={{ backgroundColor: editingElement.color }}
+                />
+              </button>
+              {showTextColorPicker && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[200] rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5">
+                  <HexColorPicker
+                    color={editingElement.color}
+                    onChange={(c) => hook.updateElement(editingId, { color: c })}
+                  />
+                  <div className="mt-2">
+                    <input
+                      className="w-full text-[11px] font-mono text-center border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      value={editingElement.color}
+                      onChange={(e) => hook.updateElement(editingId, { color: e.target.value })}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+
+            {/* Done */}
+            <button
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide hover:bg-slate-700 transition-colors"
+              onMouseDown={(e) => { e.preventDefault(); commitTextEdit(); }}
+            >
+              Done
+            </button>
+          </div>
+        )}
+
         <div
           data-canvas-paper
           className="flex-shrink-0"
@@ -236,10 +484,14 @@ export default function TemplateCanvas({
                     key={el.id}
                     element={el}
                     isSelected={hook.selectedId === el.id}
-                    onSelect={() => hook.selectElement(el.id)}
+                    onSelect={() => {
+                      if (editingId && editingId !== el.id) commitTextEdit();
+                      hook.selectElement(el.id);
+                    }}
                     onChange={(changes) => hook.updateElement(el.id, changes)}
                     onDragMove={(e) => handleDragMove(el.id, e)}
                     onDragEnd={handleDragEnd}
+                    onDoubleClick={() => handleDoubleClick(el.id)}
                   />
                 ))
               }
@@ -247,13 +499,28 @@ export default function TemplateCanvas({
                 <Line
                   key={i}
                   points={g.type === 'V' ? [g.pos, 0, g.pos, canvasHeight] : [0, g.pos, canvasWidth, g.pos]}
-                  stroke="#3b82f6"
+                  stroke="#6366f1"
                   strokeWidth={1}
                   dash={[4, 2]}
                 />
               ))}
             </Layer>
           </Stage>
+
+          {/* Inline text editing overlay */}
+          {editingId && editingElement && (
+            <div
+              ref={editOverlayRef}
+              contentEditable
+              suppressContentEditableWarning
+              style={getOverlayStyle()}
+              onKeyDown={handleOverlayKeyDown}
+              onBlur={commitTextEdit}
+              dangerouslySetInnerHTML={
+                editOverlayRef.current ? undefined : { __html: editingElement.content || '' }
+              }
+            />
+          )}
 
           {hook.elements
             .filter(e => e.is_locked && !e._deleted)
@@ -273,6 +540,22 @@ export default function TemplateCanvas({
               </div>
             ))
           }
+
+          {/* Double-click hint shown when a text element is selected but not editing */}
+          {selectedElement?.element_type === 'text' && !editingId && (
+            <div
+              className="absolute pointer-events-none z-10"
+              style={{
+                left: selectedElement.x * scale,
+                top: selectedElement.y * scale - 26,
+                transform: 'none',
+              }}
+            >
+              <div className="flex items-center gap-1 bg-slate-900/80 text-white text-[9px] font-bold uppercase tracking-wide rounded-md px-2 py-1 backdrop-blur-sm whitespace-nowrap">
+                Double-click to edit text
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -387,6 +670,32 @@ export default function TemplateCanvas({
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
     </div>
+  );
+}
+
+function ToolbarBtn({
+  children,
+  active,
+  onMouseDown,
+  title,
+}: {
+  children: React.ReactNode;
+  active?: boolean;
+  onMouseDown: (e: React.MouseEvent) => void;
+  title?: string;
+}) {
+  return (
+    <button
+      title={title}
+      onMouseDown={onMouseDown}
+      className={`w-8 h-7 flex items-center justify-center rounded-lg transition-colors text-sm ${
+        active
+          ? 'bg-slate-900 text-white'
+          : 'text-slate-600 hover:bg-slate-100'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

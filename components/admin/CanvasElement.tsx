@@ -11,6 +11,7 @@ interface CanvasElementProps {
   onChange: (changes: Partial<KonvaElement>) => void;
   onDragMove?: (e: any) => void;
   onDragEnd?: (e: any) => void;
+  onDoubleClick?: () => void;
 }
 
 export default React.memo(function CanvasElement({
@@ -20,6 +21,7 @@ export default React.memo(function CanvasElement({
   onChange,
   onDragMove,
   onDragEnd,
+  onDoubleClick,
 }: CanvasElementProps) {
   // Delegate contact_block entirely to its own component
   if (element.element_type === 'contact_block') {
@@ -74,8 +76,8 @@ export default React.memo(function CanvasElement({
     draggable: !element.is_locked,
     onDragMove,
     onDragEnd: (e: any) => {
-        handleDragEnd(e);
-        onDragEnd?.(e);
+      handleDragEnd(e);
+      onDragEnd?.(e);
     },
     onTransformEnd: handleTransformEnd,
     onClick: onSelect,
@@ -99,6 +101,8 @@ export default React.memo(function CanvasElement({
             align={element.text_align}
             lineHeight={element.line_height}
             letterSpacing={element.letter_spacing}
+            onDblClick={onDoubleClick}
+            onDblTap={onDoubleClick}
           />
         );
       case 'shape':
