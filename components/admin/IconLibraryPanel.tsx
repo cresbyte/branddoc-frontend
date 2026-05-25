@@ -1,16 +1,16 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { X, Search, ChevronDown, ChevronUp } from 'lucide-react'
-import { HexColorPicker } from 'react-colorful'
-import { getIcons } from '@/services/templates'
-import { 
-    svgToDataUrl, 
+import {
     getDefaultVariant,
-    type IconWithVariants,
+    svgToDataUrl,
     type IconVariantDetail,
+    type IconWithVariants,
 } from '@/lib/svgUtils'
+import { getIcons } from '@/services/templates'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react'
+import React, { useCallback, useMemo, useState } from 'react'
+import { HexColorPicker } from 'react-colorful'
 
 interface IconLibraryPanelProps {
     isOpen: boolean
@@ -58,11 +58,11 @@ function IconCard({ icon, onAdd }: IconCardProps) {
 
     const handleDragStart = (e: React.DragEvent) => {
         if (!selectedVariant) return
-        e.dataTransfer.setData('application/contact-block', 
+        e.dataTransfer.setData('application/contact-block',
             JSON.stringify({
-                variantDetail: { 
-                    ...selectedVariant, 
-                    icon_name: icon.name 
+                variantDetail: {
+                    ...selectedVariant,
+                    icon_name: icon.name
                 },
                 iconColor,
             })
@@ -72,15 +72,15 @@ function IconCard({ icon, onAdd }: IconCardProps) {
 
     return (
         <div
-            className="rounded-xl border border-gray-200 bg-white 
-                       p-3 hover:border-blue-300 hover:shadow-sm 
+            className="rounded-xl border border-gray-200 bg-white
+                       p-3 hover:border-blue-300 hover:shadow-sm
                        transition-all cursor-grab active:cursor-grabbing
                        select-none"
             draggable
             onDragStart={handleDragStart}
         >
             {/* Icon name */}
-            <p className="text-xs font-semibold text-gray-800 
+            <p className="text-xs font-semibold text-gray-800
                           mb-2 truncate">
                 {icon.name}
             </p>
@@ -92,8 +92,8 @@ function IconCard({ icon, onAdd }: IconCardProps) {
                         <button
                             key={v.id}
                             onClick={() => setSelectedVariantId(v.id)}
-                            className={`px-2 py-0.5 rounded-full 
-                                       text-[9px] font-medium 
+                            className={`px-2 py-0.5 rounded-full
+                                       text-[9px] font-medium
                                        transition-colors capitalize ${
                                 selectedVariantId === v.id
                                     ? 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -109,26 +109,26 @@ function IconCard({ icon, onAdd }: IconCardProps) {
             {/* Preview: icon alone + contact block preview */}
             <div className="flex items-center gap-2 mb-3">
                 {/* Large icon preview */}
-                <div className="w-9 h-9 flex items-center 
-                               justify-center bg-gray-50 
-                               rounded-lg border border-gray-100 
+                <div className="w-9 h-9 flex items-center
+                               justify-center bg-gray-50
+                               rounded-lg border border-gray-100
                                flex-shrink-0">
                     {previewUrl
-                        ? <img 
-                            src={previewUrl} 
-                            className="w-5 h-5" 
+                        ? <img
+                            src={previewUrl}
+                            className="w-5 h-5"
                             alt={icon.name}
                             draggable={false}
                           />
-                        : <div className="w-5 h-5 bg-gray-200 
+                        : <div className="w-5 h-5 bg-gray-200
                                          rounded" />
                     }
                 </div>
 
                 {/* Contact block preview */}
-                <div className="flex items-center gap-1.5 
-                               flex-1 min-w-0 bg-gray-50 
-                               rounded-lg px-2 py-1.5 
+                <div className="flex items-center gap-1.5
+                               flex-1 min-w-0 bg-gray-50
+                               rounded-lg px-2 py-1.5
                                border border-gray-100">
                     {previewUrl && (
                         <img
@@ -138,7 +138,7 @@ function IconCard({ icon, onAdd }: IconCardProps) {
                             alt=""
                         />
                     )}
-                    <span className="text-[9px] text-gray-400 
+                    <span className="text-[9px] text-gray-400
                                     truncate">
                         Your {icon.name}
                     </span>
@@ -149,21 +149,21 @@ function IconCard({ icon, onAdd }: IconCardProps) {
             <div className="relative mb-3">
                 <button
                     onClick={() => setShowColorPicker(p => !p)}
-                    className="flex items-center gap-2 w-full 
-                               text-xs text-gray-600 
+                    className="flex items-center gap-2 w-full
+                               text-xs text-gray-600
                                hover:text-gray-900 transition-colors"
                 >
                     <span
-                        className="w-4 h-4 rounded-full 
-                                   border border-gray-300 
+                        className="w-4 h-4 rounded-full
+                                   border border-gray-300
                                    flex-shrink-0 shadow-inner"
                         style={{ backgroundColor: iconColor }}
                     />
-                    <span className="font-mono text-[10px] 
+                    <span className="font-mono text-[10px]
                                     text-gray-500">
                         {iconColor}
                     </span>
-                    {showColorPicker 
+                    {showColorPicker
                         ? <ChevronUp size={10} className="ml-auto text-gray-400" />
                         : <ChevronDown size={10} className="ml-auto text-gray-400" />
                     }
@@ -172,19 +172,19 @@ function IconCard({ icon, onAdd }: IconCardProps) {
                 {showColorPicker && (
                     <>
                         {/* Backdrop to close picker */}
-                        <div 
+                        <div
                             className="fixed inset-0 z-40"
                             onClick={() => setShowColorPicker(false)}
                         />
-                        <div className="absolute left-0 top-6 
-                                       z-50 shadow-xl rounded-xl 
-                                       overflow-hidden border 
+                        <div className="absolute left-0 top-6
+                                       z-50 shadow-xl rounded-xl
+                                       overflow-hidden border
                                        border-gray-200">
                             <HexColorPicker
                                 color={iconColor}
                                 onChange={setIconColor}
                             />
-                            <div className="bg-white px-3 py-2 
+                            <div className="bg-white px-3 py-2
                                            border-t border-gray-100">
                                 <input
                                     type="text"
@@ -193,12 +193,12 @@ function IconCard({ icon, onAdd }: IconCardProps) {
                                         if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value))
                                             setIconColor(e.target.value)
                                     }}
-                                    className="w-full text-xs 
-                                               font-mono border 
-                                               border-gray-200 
+                                    className="w-full text-xs
+                                               font-mono border
+                                               border-gray-200
                                                rounded-lg px-2 py-1
-                                               focus:outline-none 
-                                               focus:ring-1 
+                                               focus:outline-none
+                                               focus:ring-1
                                                focus:ring-blue-500"
                                 />
                             </div>
@@ -210,8 +210,8 @@ function IconCard({ icon, onAdd }: IconCardProps) {
             {/* Add to canvas button */}
             <button
                 onClick={handleAdd}
-                className="w-full rounded-lg bg-blue-50 py-1.5 
-                           text-xs font-semibold text-blue-700 
+                className="w-full rounded-lg bg-blue-50 py-1.5
+                           text-xs font-semibold text-blue-700
                            hover:bg-blue-100 active:bg-blue-200
                            transition-colors"
             >
@@ -222,11 +222,11 @@ function IconCard({ icon, onAdd }: IconCardProps) {
 }
 
 // ── Category section ────────────────────────────────────
-function CategorySection({ 
-    category, 
-    icons, 
-    onAdd 
-}: { 
+function CategorySection({
+    category,
+    icons,
+    onAdd
+}: {
     category: string
     icons: IconWithVariants[]
     onAdd: IconCardProps['onAdd']
@@ -244,19 +244,19 @@ function CategorySection({
         <div className="mb-4">
             <button
                 onClick={() => setCollapsed(p => !p)}
-                className="flex items-center justify-between 
-                           w-full px-4 py-2 text-xs font-bold 
-                           uppercase tracking-wider text-gray-500 
+                className="flex items-center justify-between
+                           w-full px-4 py-2 text-xs font-bold
+                           uppercase tracking-wider text-gray-500
                            hover:text-gray-700 transition-colors"
             >
                 <span>{label}</span>
                 <span className="flex items-center gap-1">
-                    <span className="text-gray-300 font-normal 
+                    <span className="text-gray-300 font-normal
                                     normal-case tracking-normal">
                         {icons.length}
                     </span>
-                    {collapsed 
-                        ? <ChevronDown size={12} /> 
+                    {collapsed
+                        ? <ChevronDown size={12} />
                         : <ChevronUp size={12} />
                     }
                 </span>
@@ -265,10 +265,10 @@ function CategorySection({
             {!collapsed && (
                 <div className="px-3 grid grid-cols-2 gap-2">
                     {icons.map(icon => (
-                        <IconCard 
-                            key={icon.id} 
-                            icon={icon} 
-                            onAdd={onAdd} 
+                        <IconCard
+                            key={icon.id}
+                            icon={icon}
+                            onAdd={onAdd}
                         />
                     ))}
                 </div>
@@ -293,7 +293,7 @@ export default function IconLibraryPanel({
         enabled: isOpen,
     })
 
-    const icons: IconWithVariants[] = 
+    const icons: IconWithVariants[] =
         (iconsData as any)?.results ?? iconsData ?? []
 
     // Filter by search
@@ -324,7 +324,7 @@ export default function IconLibraryPanel({
 
     if (!isOpen) return null
 
-    const containerClasses = inlineMode 
+    const containerClasses = inlineMode
         ? "flex flex-col h-full w-full bg-transparent overflow-hidden"
         : "absolute left-0 top-0 h-full w-72 bg-white border-r border-gray-200 shadow-2xl z-40 flex flex-col animate-in slide-in-from-left-2 duration-200"
 
