@@ -1,27 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { HexColorPicker } from 'react-colorful';
-import * as Slider from '@radix-ui/react-slider';
-import { 
-  Trash2, Copy, Move, RotateCw, 
-  Bold, Italic, Shapes, Pipette, RefreshCw
-} from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { KonvaElement } from '@/hooks/useTemplateCanvas';
-import { getIcons } from '@/services/templates';
-import IconLibraryPanel from './IconLibraryPanel';
-import type { IconWithVariants } from '@/lib/svgUtils';
 import {
   extractSvgColors,
   fetchSvgText,
   recolorSvgText,
   svgTextToDataUrl,
 } from '@/lib/svgColorUtils';
+import type { IconWithVariants } from '@/lib/svgUtils';
+import { getIcons } from '@/services/templates';
+import * as Slider from '@radix-ui/react-slider';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Bold,
+  Copy,
+  Italic,
+  Move,
+  Pipette, RefreshCw,
+  RotateCw,
+  Shapes,
+  Trash2
+} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { HexColorPicker } from 'react-colorful';
+import IconLibraryPanel from './IconLibraryPanel';
 
 // Design System
-import { TextField } from '@/components/DesignSystem/TextField';
-import { SelectField } from '@/components/DesignSystem/SelectField';
 import { Button } from '@/components/DesignSystem/Button';
 import { ImageUpload } from '@/components/DesignSystem/ImageUpload';
+import { SelectField } from '@/components/DesignSystem/SelectField';
+import { TextField } from '@/components/DesignSystem/TextField';
 
 interface ElementPropertiesPanelProps {
   element: KonvaElement | null;
@@ -58,11 +64,11 @@ export default function ElementPropertiesPanel({
 
   const icons: IconWithVariants[] = iconsData?.results ?? iconsData ?? [];
 
-  const currentIcon = icons.find(icon => 
+  const currentIcon = icons.find(icon =>
     icon.variants.some(v => v.id === element?.icon_variant_id)
   );
 
-  const availableVariants = currentIcon?.variants ?? 
+  const availableVariants = currentIcon?.variants ??
     (element?.icon_variant_detail ? [element.icon_variant_detail] : []);
 
   // Fetch and parse SVG colors when an SVG element is selected
@@ -149,20 +155,20 @@ export default function ElementPropertiesPanel({
         />
 
         <div className="flex flex-wrap gap-4">
-          <BooleanToggle 
-            label="Editable" 
-            value={element.is_editable} 
-            onChange={(val) => onChange({ is_editable: val })} 
+          <BooleanToggle
+            label="Editable"
+            value={element.is_editable}
+            onChange={(val) => onChange({ is_editable: val })}
           />
-          <BooleanToggle 
-            label="Locked" 
-            value={element.is_locked} 
-            onChange={(val) => onChange({ is_locked: val })} 
+          <BooleanToggle
+            label="Locked"
+            value={element.is_locked}
+            onChange={(val) => onChange({ is_locked: val })}
           />
-          <BooleanToggle 
-            label="Visible" 
-            value={element.is_visible} 
-            onChange={(val) => onChange({ is_visible: val })} 
+          <BooleanToggle
+            label="Visible"
+            value={element.is_visible}
+            onChange={(val) => onChange({ is_visible: val })}
           />
         </div>
       </div>
@@ -258,7 +264,7 @@ export default function ElementPropertiesPanel({
       {element.element_type === 'contact_block' && (
         <div className="p-4 space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Contact Block Properties</h4>
-          
+
           <div className="space-y-4">
              <div className="flex items-center justify-between">
                 <label className="text-[13px] font-semibold text-slate-700">Current Icon</label>
@@ -273,9 +279,9 @@ export default function ElementPropertiesPanel({
                   {availableVariants.map(v => (
                     <button
                       key={v.id}
-                      onClick={() => onChange({ 
-                        icon_variant_id: v.id, 
-                        icon_variant_detail: { ...v, icon_name: currentIcon?.name || element.placeholder_hint } 
+                      onClick={() => onChange({
+                        icon_variant_id: v.id,
+                        icon_variant_detail: { ...v, icon_name: currentIcon?.name || element.placeholder_hint }
                       })}
                       className={`px-2 py-1 rounded bg-white border text-[10px] font-medium transition-all capitalize ${
                         element.icon_variant_id === v.id ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'
@@ -313,7 +319,7 @@ export default function ElementPropertiesPanel({
 
           <div className="space-y-4">
              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Label Text</h4>
-             
+
              <TextField
               label="Content"
               value={element.content || ''}
@@ -329,12 +335,12 @@ export default function ElementPropertiesPanel({
              />
 
              <div className="flex gap-2">
-                <SegmentedControl 
+                <SegmentedControl
                   options={[{ label: <Bold size={14} />, value: 'bold' }, { label: 'Regular', value: 'normal' }]}
                   value={element.font_weight === 'bold' ? 'bold' : 'normal'}
                   onChange={(v) => onChange({ font_weight: v as string })}
                 />
-                <SegmentedControl 
+                <SegmentedControl
                   options={[{ label: <Italic size={14} />, value: 'italic' }, { label: 'Regular', value: 'normal' }]}
                   value={element.font_style === 'italic' ? 'italic' : 'normal'}
                   onChange={(v) => onChange({ font_style: v as string })}
@@ -364,7 +370,7 @@ export default function ElementPropertiesPanel({
       {(element.element_type === 'shape' || element.element_type === 'line') && (
         <div className="p-4 space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Style Properties</h4>
-          
+
           <ColorPickerField
             label="Color"
             color={element.background_color}
@@ -382,7 +388,7 @@ export default function ElementPropertiesPanel({
       {(element.element_type === 'image' || element.element_type === 'svg') && (
         <div className="p-4 space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Asset Properties</h4>
-          
+
           <ImageUpload
             label="Upload Asset"
             value={element.asset_url || ''}
@@ -578,7 +584,7 @@ function NumberInput({ label, value, subLabel, onChange }: { label: string, valu
 function BooleanToggle({ label, value, onChange }: { label: string, value: boolean, onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-center gap-2 cursor-pointer group">
-      <div 
+      <div
         onClick={() => onChange(!value)}
         className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${value ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-300'}`}
       >
