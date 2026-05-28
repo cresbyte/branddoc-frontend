@@ -1,18 +1,18 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
-  Users,
   BarChart3,
-  Settings,
-  LogOut,
-  Shield,
-  FileText,
   CreditCard,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  Users,
 } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 const adminRoutes = [
   {
