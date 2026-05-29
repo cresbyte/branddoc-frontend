@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { Type, Image, Triangle, Minus, Box, Lock } from "lucide-react";
 import { clsx } from "clsx";
+import { Box, Image, Lock, Minus, Triangle, Type } from "lucide-react";
+import React from "react";
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   text: <Type size={13} />,
