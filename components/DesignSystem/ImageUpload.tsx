@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
-import { adminUploadAsset } from "@/services/templates";
-import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { adminUploadAsset } from "@/services/templates";
+import { Loader2, Upload, X } from "lucide-react";
+import React, { useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 interface ImageUploadProps {
   label: string;
@@ -48,18 +48,18 @@ export function ImageUpload({ label, value, onChange, className }: ImageUploadPr
       <label className="block text-sm font-semibold text-slate-700">
         {label}
       </label>
-      
-      <div 
+
+      <div
         onClick={() => fileInputRef.current?.click()}
         className={cn(
           "relative group border-[1.5px] border-dashed rounded-medium bg-slate-50 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-100 hover:border-slate-400",
           value ? "h-40 border-slate-200" : "h-32 border-slate-300"
         )}
       >
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
           accept="image/*"
           onChange={handleUpload}
           disabled={uploading}
@@ -72,9 +72,9 @@ export function ImageUpload({ label, value, onChange, className }: ImageUploadPr
           </div>
         ) : value ? (
           <div className="relative w-full h-full p-2">
-            <img 
-              src={value} 
-              alt="Uploaded Preview" 
+            <img
+              src={value}
+              alt="Uploaded Preview"
               className="w-full h-full object-contain rounded-lg"
             />
             <button
