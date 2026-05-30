@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -6,9 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CreditCard, Download, Filter } from "lucide-react"
+import { Download, Filter } from "lucide-react"
 
 const payments = [
   { id: "INV-001", client: "Acme Corp", amount: "$1,200.00", date: "Apr 28, 2024", status: "Paid" },
