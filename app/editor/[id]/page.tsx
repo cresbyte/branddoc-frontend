@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { DocsCanvas } from "./components/DocCanvas";
 import { EditorContextProvider } from "./components/EditorContext";
 import { FormattingToolbar } from "./components/FormattingToolbar";
-import { DocsCanvas } from "./components/DocCanvas";
 
 const INITIAL_CONTENT = `
 <h1>Untitled document</h1>
