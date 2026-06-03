@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/lib/AuthContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Providers } from "./providers";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 const fraunces = Fraunces({subsets:['latin'],variable:'--font-serif'})
@@ -29,7 +30,11 @@ export default function RootLayout({
       <body>
         <GoogleOAuthProvider clientId="898368192915-rdtfu51uk3gu20n5cpumvq88jn7vcmma.apps.googleusercontent.com">
           <AuthProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              <Providers>
+                {children}
+              </Providers>
+            </ThemeProvider>
           </AuthProvider>
         </GoogleOAuthProvider>
       </body>

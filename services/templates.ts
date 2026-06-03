@@ -1,84 +1,45 @@
-import { api } from "@/lib/api";
+import { BrandPack, Review } from '../lib/types';
+import { MOCK_PACKS, MOCK_REVIEWS } from '../lib/mock-data';
+import { SIMULATED_API_DELAY_MS } from '../lib/constants';
 
-// ── Admin endpoints ───────────────────────────────────────────────────────────
+/**
+ * Simulates a network request delay
+ */
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const adminGetTemplates = (params?: Record<string, string>) => {
-  const qs = new URLSearchParams({ ...(params || {}) }).toString();
-  return api.get(`/api/templates/?${qs}`);
-};
+/**
+ * Fetch all available brand template packs.
+ * TODO: Replace with real API call `GET /api/packs`
+ */
+export async function getTemplatePacks(): Promise<BrandPack[]> {
+  await delay(SIMULATED_API_DELAY_MS);
+  return MOCK_PACKS;
+}
 
-export const adminGetTemplate = (id: string) => api.get(`/api/templates/${id}/`);
+/**
+ * Fetch a single brand template pack by ID.
+ * TODO: Replace with real API call `GET /api/packs/:id`
+ */
+export async function getTemplatePack(id: string): Promise<BrandPack | null> {
+  await delay(SIMULATED_API_DELAY_MS);
+  const pack = MOCK_PACKS.find(p => p.id === id);
+  return pack || null;
+}
 
-export const adminCreateTemplate = (data: unknown) => api.post("/api/templates/", data);
+/**
+ * Fetch featured brand template packs for the landing page.
+ * TODO: Replace with real API call `GET /api/packs?featured=true`
+ */
+export async function getFeaturedPacks(): Promise<BrandPack[]> {
+  await delay(SIMULATED_API_DELAY_MS);
+  return MOCK_PACKS.filter(p => p.featured);
+}
 
-export const adminUpdateTemplate = (id: string, data: unknown) =>
-  api.put(`/api/templates/${id}/`, data);
-
-export const adminDeleteTemplate = (id: string) => api.delete(`/api/templates/${id}/`);
-
-export const adminGetElements = (templateId: string) =>
-  api.get(`/api/template-elements/?template_id=${templateId}`);
-
-export const adminAddElement = (data: unknown) => api.post("/api/template-elements/", data);
-
-export const adminUpdateElement = (id: string, data: unknown) =>
-  api.put(`/api/template-elements/${id}/`, data);
-
-export const adminBulkUpdateElements = (data: unknown) =>
-  api.put("/api/template-elements/bulk-update/", data);
-
-export const adminDeleteElement = (id: string) => api.delete(`/api/template-elements/${id}/`);
-
-export const adminUploadAsset = (data: unknown) => api.post("/api/template-assets/", data);
-
-// ── User endpoints ────────────────────────────────────────────────────────────
-
-export const getPublishedTemplates = (params?: Record<string, string>) => {
-  const qs = new URLSearchParams({ ...(params || {}) }).toString();
-  return api.get(`/api/templates/?${qs}`);
-};
-
-export const getTemplateDetail = (id: string) => api.get(`/api/templates/${id}/`);
-
-export const getUserDesigns = () => api.get("/api/designs/");
-
-export const getUserDesign = (id: string) => api.get(`/api/designs/${id}/`);
-
-export const saveUserDesign = (data: unknown) => api.post("/api/designs/", data);
-
-export const updateUserDesign = (id: string, data: unknown) =>
-  api.put(`/api/designs/${id}/`, data);
-
-export const deleteUserDesign = (id: string) => api.delete(`/api/designs/${id}/`);
-
-// ── Icon endpoints ────────────────────────────────────
-
-// GET /api/icons/
-export const getIcons = (params: Record<string, string> = {}) => {
-  const qs = new URLSearchParams(params).toString();
-  return api.get(`/api/icons/${qs ? "?" + qs : ""}`);
-};
-
-// Admin only
-export const adminGetIcons = (params: Record<string, string> = {}) => {
-  const qs = new URLSearchParams(params).toString();
-  return api.get(`/api/icons/${qs ? "?" + qs : ""}`);
-};
-
-export const adminCreateIcon = (data: unknown) =>
-  api.post("/api/icons/", data);
-
-export const adminUpdateIcon = (id: string, data: unknown) =>
-  api.put(`/api/icons/${id}/`, data);
-
-export const adminDeleteIcon = (id: string) =>
-  api.delete(`/api/icons/${id}/`);
-
-export const adminCreateIconVariant = (data: unknown) =>
-  api.post("/api/icon-variants/", data);
-
-export const adminUpdateIconVariant = (id: string, data: unknown) =>
-  api.put(`/api/icon-variants/${id}/`, data);
-
-export const adminDeleteIconVariant = (id: string) =>
-  api.delete(`/api/icon-variants/${id}/`);
+/**
+ * Fetch reviews for a specific template pack.
+ * TODO: Replace with real API call `GET /api/packs/:id/reviews`
+ */
+export async function getPackReviews(packId: string): Promise<Review[]> {
+  await delay(SIMULATED_API_DELAY_MS);
+  return MOCK_REVIEWS.filter(r => r.packId === packId);
+}

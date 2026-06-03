@@ -12,7 +12,7 @@ export default function AboutPage() {
         <section style={{ background: "#0F172A", paddingTop: 140, paddingBottom: 100, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1, background: "radial-gradient(circle at 20% 30%, #3B82F6 0%, transparent 50%), radial-gradient(circle at 80% 70%, #1D4ED8 0%, transparent 50%)" }} />
           <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
-            <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 800, color: "#fff", fontFamily: "var(--font-serif)", marginBottom: 24, tracking: "-0.02em" }}>
+            <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 800, color: "#fff", fontFamily: "var(--font-serif)", marginBottom: 24, letterSpacing: "-0.02em" }}>
               Our mission is to simplify <br/> <span style={{ color: "#3B82F6" }}>brand consistency.</span>
             </h1>
             <p style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-dm-sans)", lineHeight: 1.6, maxWidth: 640, margin: "0 auto" }}>
